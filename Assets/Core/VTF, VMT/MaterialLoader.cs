@@ -128,7 +128,7 @@ namespace Engine.Source
 			if (Items.ContainsKey("$color"))
             {
                 String[] Color = Items["$color"].Replace(".", "").Trim('[', ']', '{', '}').Trim().Split(' ');
-                MaterialColor = new Color32(byte.Parse(Color[0]), byte.Parse(Color[1]), byte.Parse(Color[2]), 255);
+                MaterialColor = new Color32((byte)Int64.Parse(Color[0]), (byte)Int64.Parse(Color[1]), (byte)Int64.Parse(Color[2]), 255);
             }
 
             if (Items.ContainsKey("$alpha"))
