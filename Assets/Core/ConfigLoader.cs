@@ -50,12 +50,15 @@ namespace Engine.Source
         public static String GamePath = @"././SourceGames";
         public static readonly String[] ModFolders = { "cstrike", "hl2" };
 
-        public static String LevelName = "aim_deagle7k"; // BSP
+        public static String LevelName = "de_dust2"; // BSP
         public static String VpkName = "cstrike_pak_dir"; // VPK - TODO
         public static Boolean VpkUse = false; // Use VPK
 		public static Boolean LoadMDL = true; //Load Only MDL file
 		public static Boolean LoadMap = false;
-		public static Boolean DrawArmature = true;
+        //HDR ONLY
+        public static Boolean useHDRLighting = true;
+        //HDR ONLY
+        public static Boolean DrawArmature = true;
         public static String ModelName = "player/t_leet"; // MDL
 
         public static string BSPPath = GamePath + "/" + ModFolders[0] + "/maps/" + LevelName + ".bsp";

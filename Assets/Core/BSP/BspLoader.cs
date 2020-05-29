@@ -572,7 +572,7 @@ namespace Engine.Source
 
                 for (Int32 j = 0; j < TexPixels.Length; j++)
                 {
-                    ColorRGBExp32 ColorRGBExp32 = TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
+                    ColorRGBExp32 ColorRGBExp32 = ConfigLoader.useHDRLighting ? TexLightToLinearHDR(InpFaces[i].LightOfs + (j * 4)) : TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
 					TexPixels[j] = new Color32(ColorRGBExp32.r, ColorRGBExp32.g, ColorRGBExp32.b, 255);
 				}
 
@@ -604,13 +604,43 @@ namespace Engine.Source
 			ColorRGBExp32 ColorRGBExp32 = new ColorRGBExp32();
             BSPFileReader.ReadType(ref ColorRGBExp32, Offset);
 
-			float Pow = Mathf.Pow(2, ColorRGBExp32.exponent) * 1.5f;
+			float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
 
-			ColorRGBExp32.r = (Byte)Mathf.Clamp(ColorRGBExp32.r * Pow, 0, 255);
-            ColorRGBExp32.g = (Byte)Mathf.Clamp(ColorRGBExp32.g * Pow, 0, 255);
-            ColorRGBExp32.b = (Byte)Mathf.Clamp(ColorRGBExp32.b * Pow, 0, 255);
+            ColorRGBExp32.r = TexLightToLinearB(ColorRGBExp32.r, Pow);
+            ColorRGBExp32.g = TexLightToLinearB(ColorRGBExp32.g, Pow);
+            ColorRGBExp32.b = TexLightToLinearB(ColorRGBExp32.b, Pow);
 
-			return ColorRGBExp32;
+            return ColorRGBExp32;
+        }
+
+        static ColorRGBExp32 TexLightToLinearHDR(long Offset)
+        {
+
+            Offset += BSP_Header.Lumps[58].FileLen / 56 > 0 ? BSP_Header.Lumps[53].FileOfs : BSP_Header.Lumps[8].FileOfs;
+
+            ColorRGBExp32 ColorRGBExp32 = new ColorRGBExp32();
+            BSPFileReader.ReadType(ref ColorRGBExp32, Offset);
+
+            float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
+
+            //https://github.com/lewa-j/Unity-Source-Tools/blob/834869c8ad7ad8924af62e11e9e55486e18203e8/Assets/Code/Read/BSPFile.cs#L337
+            Color32 col = new Color(TexLightToLinearF(ColorRGBExp32.r, Pow), TexLightToLinearF(ColorRGBExp32.g, Pow), TexLightToLinearF(ColorRGBExp32.b, Pow), 1f).gamma; 
+            ColorRGBExp32.r = col.r;
+            ColorRGBExp32.g = col.g;
+            ColorRGBExp32.b = col.b;
+            return ColorRGBExp32;
+        }
+
+        //https://github.com/lewa-j/Unity-Source-Tools/blob/834869c8ad7ad8924af62e11e9e55486e18203e8/Assets/Code/Read/BSPFile.cs#L350
+        static byte TexLightToLinearB(byte c, float exponent)
+        {
+            return (byte)Mathf.Clamp(((float)c * exponent) * 0.5f, 0, 255);
+        }
+
+        //https://github.com/lewa-j/Unity-Source-Tools/blob/834869c8ad7ad8924af62e11e9e55486e18203e8/Assets/Code/Read/BSPFile.cs#L356
+        static float TexLightToLinearF(byte c, float exponent)
+        {
+            return Mathf.Clamp((float)c * exponent * 0.5f, 0, 255) / 255.0f;
         }
 
         static void CreateSkybox(List<String> data)
