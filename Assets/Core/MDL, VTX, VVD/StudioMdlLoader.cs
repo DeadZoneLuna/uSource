@@ -14,7 +14,7 @@ namespace Engine.Source
         static MemUtils ModelFileLoader;
 
         static studiohdr_t MDL_Header;
-		static mstudiobodyparts_t[] MDL_BodyParts;
+        static mstudiobodyparts_t[] MDL_BodyParts;
         static mstudiomodel_t[] MDL_Models;
         static mstudiomesh_t[] MDL_Meshes;
 
@@ -35,8 +35,8 @@ namespace Engine.Source
         static ModelLODHeader_t vLod;
 
         static GameObject ModelObject;
-		static MDLArmatureInfo BonesInfo;
-		public static Dictionary<string, Transform> ModelsInRAM;
+        static MDLArmatureInfo BonesInfo;
+        public static Dictionary<string, Transform> ModelsInRAM;
 
         static void Clear()
         {
@@ -44,7 +44,7 @@ namespace Engine.Source
             VVD_Vertexes = new List<mstudiovertex_t>();
         }
 
-		public static Transform Load(String ModelName)
+        public static Transform Load(String ModelName)
         {
             Clear();
 
@@ -64,17 +64,16 @@ namespace Engine.Source
             {
                 if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/models/" + ModelName + ".mdl") && !ConfigLoader.VpkUse)
                     OpenPath = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/models/" + ModelName;
-                else if(File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + ConfigLoader.VpkName + ".vpk") && ConfigLoader.VpkUse)
+                else if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + ConfigLoader.VpkName + ".vpk") && ConfigLoader.VpkUse)
                     OpenPath = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + ConfigLoader.VpkName + ".vpk";
             }
 
             ModelObject = new GameObject(ModelName);
 
-
-			if (!File.Exists(OpenPath + ".mdl"))
+            if (!File.Exists(OpenPath + ".mdl"))
             {
                 Debug.Log(String.Format("{0}: File not found", ModelName + ".mdl"));
-				return Load("error");
+                return Load("error");
                 //return ModelObject.transform;
             }
 
@@ -110,93 +109,97 @@ namespace Engine.Source
                 return ModelObject.transform;
             }
 
-			if(ConfigLoader.DrawArmature)
-			{
-				BonesInfo = ModelObject.AddComponent<MDLArmatureInfo>();
-				DrawArmature();
-			}
+            if (ConfigLoader.DrawArmature)
+            {
+                BonesInfo = ModelObject.AddComponent<MDLArmatureInfo>();
+                DrawArmature();
+            }
 
             ModelsInRAM.Add(ModelName, ModelObject.transform);
             return ModelObject.transform;
         }
 
-		static void ParseMdlFile()
-		{
-			if (MDL_Header.id != 0x54534449)
-				throw new FileLoadException(String.Format("{0}: File signature does not match 'IDST'", ModelObject.name + ".mdl"));
+        static void ParseMdlFile()
+        {
+            if (MDL_Header.id != 0x54534449)
+                throw new FileLoadException(String.Format("{0}: File signature does not match 'IDST'", ModelObject.name + ".mdl"));
 
-			MDL_BodyParts = new mstudiobodyparts_t[MDL_Header.bodypart_count];
-			ModelFileLoader.ReadArray(ref MDL_BodyParts, MDL_Header.bodypart_offset);
+            MDL_BodyParts = new mstudiobodyparts_t[MDL_Header.bodypart_count];
+            ModelFileLoader.ReadArray(ref MDL_BodyParts, MDL_Header.bodypart_offset);
 
-			Int32 ModelInputFilePosition = MDL_Header.bodypart_offset + MDL_BodyParts[0].modelindex;
-			MDL_Models = new mstudiomodel_t[MDL_BodyParts[0].nummodels];
-			ModelFileLoader.ReadArray(ref MDL_Models, ModelInputFilePosition);
+            Int32 ModelInputFilePosition = MDL_Header.bodypart_offset + MDL_BodyParts[0].modelindex;
+            MDL_Models = new mstudiomodel_t[MDL_BodyParts[0].nummodels];
+            ModelFileLoader.ReadArray(ref MDL_Models, ModelInputFilePosition);
 
-			Int32 MeshInputFilePosition = ModelInputFilePosition + MDL_Models[0].meshindex;
-			MDL_Meshes = new mstudiomesh_t[MDL_Models[0].nummeshes];
-			ModelFileLoader.ReadArray(ref MDL_Meshes, MeshInputFilePosition);
+            Int32 MeshInputFilePosition = ModelInputFilePosition + MDL_Models[0].meshindex;
+            MDL_Meshes = new mstudiomesh_t[MDL_Models[0].nummeshes];
+            ModelFileLoader.ReadArray(ref MDL_Meshes, MeshInputFilePosition);
 
-			mstudiotexture_t[] MDL_TexturesInfo = new mstudiotexture_t[MDL_Header.texture_count];
-			ModelFileLoader.ReadArray(ref MDL_TexturesInfo, MDL_Header.texture_offset);
+            mstudiotexture_t[] MDL_TexturesInfo = new mstudiotexture_t[MDL_Header.texture_count];
+            ModelFileLoader.ReadArray(ref MDL_TexturesInfo, MDL_Header.texture_offset);
 
-			MDL_Textures = new String[MDL_Header.texture_count];
-			for (Int32 i = 0; i < MDL_Header.texture_count; i++)
-			{
-				Int32 StringInputFilePosition = MDL_Header.texture_offset + (Marshal.SizeOf(typeof(mstudiotexture_t)) * i) + MDL_TexturesInfo[i].sznameindex;
-				MDL_Textures[i] = ModelFileLoader.ReadNullTerminatedString(StringInputFilePosition);
-			}
+            MDL_Textures = new String[MDL_Header.texture_count];
+            for (Int32 i = 0; i < MDL_Header.texture_count; i++)
+            {
+                Int32 StringInputFilePosition = MDL_Header.texture_offset + (Marshal.SizeOf(typeof(mstudiotexture_t)) * i) + MDL_TexturesInfo[i].sznameindex;
+                MDL_Textures[i] = ModelFileLoader.ReadNullTerminatedString(StringInputFilePosition);
+            }
 
-			Int32[] TDirOffsets = new Int32[MDL_Header.texturedir_count];
-			ModelFileLoader.ReadArray(ref TDirOffsets, MDL_Header.texturedir_offset);
+            Int32[] TDirOffsets = new Int32[MDL_Header.texturedir_count];
+            ModelFileLoader.ReadArray(ref TDirOffsets, MDL_Header.texturedir_offset);
 
-			MDL_TDirectories = new String[MDL_Header.texturedir_count];
-			for (Int32 i = 0; i < MDL_Header.texturedir_count; i++)
-				MDL_TDirectories[i] = ModelFileLoader.ReadNullTerminatedString(TDirOffsets[i]);
+            MDL_TDirectories = new String[MDL_Header.texturedir_count];
+            for (Int32 i = 0; i < MDL_Header.texturedir_count; i++)
+                MDL_TDirectories[i] = ModelFileLoader.ReadNullTerminatedString(TDirOffsets[i]);
 
-			mstudiobone_t[] MDL_BonesInfo = new mstudiobone_t[MDL_Header.bone_count];
-			ModelFileLoader.ReadArray(ref MDL_BonesInfo, MDL_Header.bone_offset);
+            mstudiobone_t[] MDL_BonesInfo = new mstudiobone_t[MDL_Header.bone_count];
+            ModelFileLoader.ReadArray(ref MDL_BonesInfo, MDL_Header.bone_offset);
 
-			for (Int32 i = 0; i < MDL_Header.bone_count; i++)
-			{
-				Int32 StringInputFilePosition = MDL_Header.bone_offset + (Marshal.SizeOf(typeof(mstudiobone_t)) * i) + MDL_BonesInfo[i].sznameindex;
+            for (Int32 i = 0; i < MDL_Header.bone_count; i++)
+            {
+                Int32 StringInputFilePosition = MDL_Header.bone_offset + (Marshal.SizeOf(typeof(mstudiobone_t)) * i) + MDL_BonesInfo[i].sznameindex;
 
-				GameObject BoneObject = new GameObject(ModelFileLoader.ReadNullTerminatedString(StringInputFilePosition));
-				BoneObject.transform.parent = ModelObject.transform;
-
-				MDL_Bones.Add(BoneObject.transform);
+                GameObject BoneObject = new GameObject(ModelFileLoader.ReadNullTerminatedString(StringInputFilePosition));
+                MDL_Bones.Add(BoneObject.transform);
+                Transform FixUp = null;
 
                 // WIP - It works incorrectly (nearly)
+                //Temporary "Fix" Bone Transform
+                //TODO: Remove this sh*t code, rly :D
                 if (MDL_BonesInfo[i].parent >= 0)
                 {
                     MDL_Bones[i].parent = MDL_Bones[MDL_BonesInfo[i].parent];
+                    MDL_Bones[i].transform.localPosition = -MDL_BonesInfo[i].pos * ConfigLoader.WorldScale;
+                    MDL_Bones[i].transform.localRotation = MDL_BonesInfo[i].quat;
                 }
                 else
-                    MDL_Bones[i].transform.parent = ModelObject.transform;
-
-                Vector3 BonePosition = Vector3.zero;
-                BonePosition = new Vector3(MDL_BonesInfo[i].pos.x, MDL_BonesInfo[i].pos.z, MDL_BonesInfo[i].pos.y);
-                MDL_Bones[i].transform.localPosition = BonePosition * ConfigLoader.WorldScale;
-
-                Vector3 RotationBone = new Vector3(-MDL_BonesInfo[i].rot.x * Mathf.Rad2Deg, -MDL_BonesInfo[i].rot.z * Mathf.Rad2Deg, -MDL_BonesInfo[i].rot.y * Mathf.Rad2Deg);
-                MDL_Bones[i].transform.localEulerAngles = RotationBone;
+                {
+                    FixUp = new GameObject("FIXUP").transform;
+                    FixUp.transform.rotation = Quaternion.Euler(new Vector3(-270, 0, 0));
+                    MDL_Bones[i].parent = FixUp;
+                    MDL_Bones[i].transform.localPosition = -MDL_BonesInfo[i].pos * ConfigLoader.WorldScale;
+                    MDL_Bones[i].transform.localRotation = MDL_BonesInfo[i].quat;
+                    MDL_Bones[i].parent = ModelObject.transform;
+                    UnityEngine.Object.DestroyImmediate(FixUp.gameObject);
+                }
             }
-		}
+        }
 
-		static void DrawArmature()
-		{
-			mstudiobone_t[] MDL_BonesInfo = new mstudiobone_t[MDL_Header.bone_count];
-			for (Int32 i = 0; i < MDL_Bones.Count; i++)
-			{
-				if (ConfigLoader.DrawArmature && MDL_Header.bone_count == MDL_Bones.Count)
-				{
-					BonesInfo.ModelObject = ModelObject;
-					BonesInfo.rootNode = MDL_Bones[0];
-					BonesInfo.PopulateArmature();
-				}
-			}
-		}
+        static void DrawArmature()
+        {
+            mstudiobone_t[] MDL_BonesInfo = new mstudiobone_t[MDL_Header.bone_count];
+            for (Int32 i = 0; i < MDL_Bones.Count; i++)
+            {
+                if (ConfigLoader.DrawArmature && MDL_Header.bone_count == MDL_Bones.Count)
+                {
+                    BonesInfo.ModelObject = ModelObject;
+                    BonesInfo.rootNode = MDL_Bones[0];
+                    BonesInfo.PopulateArmature();
+                }
+            }
+        }
 
-		static void ParseVtxFile()
+        static void ParseVtxFile()
         {
             if (VTX_Header.checkSum != MDL_Header.checksum)
                 throw new FileLoadException(String.Format("{0}: Does not match the checksum in the .mdl", ModelObject.name + ".dx90.vtx"));
