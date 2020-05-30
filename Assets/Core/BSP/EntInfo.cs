@@ -71,8 +71,30 @@ namespace Engine.Source
                 }
             }
 
-            if (Classname.Equals("point_viewcontrol"))
-                gameObject.AddComponent<point_viewcontrol>();
+            //if (Classname.Equals("point_viewcontrol"))
+            //    gameObject.AddComponent<point_viewcontrol>();
+
+            //3D Skybox
+            if (Classname.Equals("sky_camera"))
+            {
+                //Setup 3DSkybox
+                Camera playerCamera = new GameObject("CameraPlayer").AddComponent<Camera>();
+                CameraFly camFly = playerCamera.gameObject.AddComponent<CameraFly>();
+                camFly.skyScale = float.Parse(Data[Data.FindIndex(n => n == "scale") + 1]);
+                camFly.offset3DSky = transform.position;
+                if (ConfigLoader.use3DSkybox)
+                {
+                    Camera skyCamera = gameObject.AddComponent<Camera>();
+                    skyCamera.depth = 0f;
+                    skyCamera.farClipPlane = 70f;
+
+                    playerCamera.depth = 1f;
+                    playerCamera.clearFlags = CameraClearFlags.Depth;
+                    camFly.skyCamera = skyCamera.transform;
+                }
+                //Setup 3DSkybox
+            }
+            //3D Skybox
 
             if (Classname.Equals("light_environment"))
             {

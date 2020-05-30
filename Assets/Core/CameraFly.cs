@@ -1,9 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Engine.Source;
 
 public class CameraFly : MonoBehaviour
 {
+    //3DSkybox
+    public Vector3 offset3DSky;
+    public float skyScale;
+    public Transform skyCamera;
+    bool use3dSky = false;
+    //3DSkybox
 
     public float cameraSensitivity = 90;
     public float climbSpeed = 4;
@@ -18,7 +25,8 @@ public class CameraFly : MonoBehaviour
     {
 		Cursor.lockState = CursorLockMode.Locked;
 		Cursor.visible = true;
-	}
+        use3dSky = ConfigLoader.use3DSkybox;
+    }
 
     void Update()
     {
@@ -52,6 +60,17 @@ public class CameraFly : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.End))
         {
 			Cursor.visible = (Cursor.visible == false) ? true : false;
+        }
+    }
+
+    void LateUpdate()
+    {
+        if (use3dSky)
+        {
+            //3DSkybox
+            skyCamera.transform.position = (transform.position / skyScale) + offset3DSky;
+            skyCamera.transform.rotation = transform.rotation;
+            //3DSkybox
         }
     }
 }

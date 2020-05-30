@@ -49,12 +49,12 @@ namespace Engine.Source
     {
         public static String GamePath = @"././SourceGames";
         public static readonly String[] ModFolders = { "cstrike", "hl2" };
-
-        public static String LevelName = "cs_militia"; // BSP
+        public static String LevelName = "cs_office"; // BSP
         public static String VpkName = "cstrike_pak_dir"; // VPK - TODO
         public static Boolean VpkUse = false; // Use VPK (not fully implemented)
         public static Boolean LoadMDL = false; //Load Only MDL file
         public static Boolean LoadLightmapsAsTextureShader = false;
+        public static Boolean use3DSkybox = true;
         public static Boolean LoadMap = true;
         public static Boolean LoadInfoDecals = false; //This is just an example, you need to implement a complete decal system.
         //HDR ONLY
