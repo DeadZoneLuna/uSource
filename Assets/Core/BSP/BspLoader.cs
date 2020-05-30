@@ -337,7 +337,11 @@ namespace Engine.Source
 
 						CreateLightMap(Faces, ref Lightmap_tex, ref UV2);
 
-						Mesh.SetUVs(1, UV2);
+                        if (ConfigLoader.LoadLightmapsAsTextureShader)
+                            if (MeshRenderer.sharedMaterial != null)
+                                MeshRenderer.sharedMaterial.SetTexture("_LightMap", Lightmap_tex);
+
+                        Mesh.SetUVs(1, UV2);
                     }
 
                     Mesh.RecalculateNormals();
@@ -415,7 +419,11 @@ namespace Engine.Source
 
 					CreateLightMap(Faces, ref Lightmap_tex, ref UV2);
 
-					Mesh.SetUVs(1, UV2);
+                    if(ConfigLoader.LoadLightmapsAsTextureShader)
+                        if (MeshRenderer.sharedMaterial != null)
+                            MeshRenderer.sharedMaterial.SetTexture("_LightMap", Lightmap_tex);
+
+                    Mesh.SetUVs(1, UV2);
                 }
 
                 Mesh.RecalculateNormals();
@@ -588,10 +596,13 @@ namespace Engine.Source
 					UV2.Add(new Vector2((InpFaces[i].UV2[j].x * UVs2[i].width) + UVs2[i].x, (InpFaces[i].UV2[j].y * UVs2[i].height) + UVs2[i].y));
 			}
 
-			//Add lightmap in array
-			ConfigLoader.lightmapsData.Add(new LightmapData() { lightmapColor = Lightmap_tex });
-			LightmapSettings.lightmaps = ConfigLoader.lightmapsData.ToArray();
-			ConfigLoader.CurrentLightmap++;
+            //Add lightmap in array
+            if (!ConfigLoader.LoadLightmapsAsTextureShader)
+            {
+                ConfigLoader.lightmapsData.Add(new LightmapData() { lightmapColor = Lightmap_tex });
+                LightmapSettings.lightmaps = ConfigLoader.lightmapsData.ToArray();
+                ConfigLoader.CurrentLightmap++;
+            }
 			//Add lightmap in array
 
 		}

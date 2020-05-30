@@ -89,8 +89,8 @@ namespace Engine.Source
 
         static Shader GetShader()
         {
-            // if (IsTrue("$additive"))
-            //    return Shader.Find("Particles/Additive");
+             if (IsTrue("$additive"))
+                return Shader.Find("Custom/Additive");
 
             String[] ADictionary = { "$translucent", "$alphatest" };
 
@@ -99,10 +99,9 @@ namespace Engine.Source
                 if (IsTrue(ADictionary[i]))
                 {
                     if (Items.ContainsKey("lightmappedgeneric"))
-						return Shader.Find("Transparent/Diffuse");
-					//return Shader.Find("Custom/LmTransparent");
+						return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/Transparent-VertexLit") : Shader.Find("Custom/LmTransparent");
 
-					return Shader.Find("Transparent/Diffuse");
+                    return Shader.Find("Custom/Transparent-VertexLit");//Shader.Find("Transparent/Diffuse");
                 }
             }
 
@@ -110,10 +109,10 @@ namespace Engine.Source
 				return Shader.Find("Custom/SelfIllumiumAlpha");
 
 			if (Items.ContainsKey("lightmappedgeneric"))
-				return Shader.Find("VertexLit");//return Shader.Find("Diffuse");
+				return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("VertexLit") : Shader.Find("Lightmapped/Diffuse");//return Shader.Find("Diffuse");
 
 			if (Items.ContainsKey("worldvertextransition"))
-                return Shader.Find("Custom/WorldVertexTransition");
+                return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/WorldVertexTransition") : Shader.Find("Custom/WorldVertexTransitionLM");
 
             if (Items.ContainsKey("unlitgeneric") || Items.ContainsKey("unlittwotexture"))
                 return Shader.Find("Mobile/Unlit (Supports Lightmap)");

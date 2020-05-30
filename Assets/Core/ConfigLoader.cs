@@ -37,7 +37,7 @@ namespace Engine.Source
             }
 
             GUILayout.Space(10);
-            GUILayout.Box(ConfigLoader.VPKPath);
+            //GUILayout.Box(ConfigLoader.VPKPath);
             GUILayout.Box(ConfigLoader.MDLPath);
             if (GUILayout.Button("Load Studio Model"))
                 StudioMDLLoader.Load(ConfigLoader.ModelName);
@@ -50,23 +50,25 @@ namespace Engine.Source
         public static String GamePath = @"././SourceGames";
         public static readonly String[] ModFolders = { "cstrike", "hl2" };
 
-        public static String LevelName = "de_dust2"; // BSP
+        public static String LevelName = "cs_militia"; // BSP
         public static String VpkName = "cstrike_pak_dir"; // VPK - TODO
-        public static Boolean VpkUse = false; // Use VPK
-		public static Boolean LoadMDL = true; //Load Only MDL file
-		public static Boolean LoadMap = false;
+        public static Boolean VpkUse = false; // Use VPK (not fully implemented)
+        public static Boolean LoadMDL = false; //Load Only MDL file
+        public static Boolean LoadLightmapsAsTextureShader = false;
+		public static Boolean LoadMap = true;
+        public static Boolean LoadInfoDecals = false; //This is just an example, you need to implement a complete decal system.
         //HDR ONLY
         public static Boolean useHDRLighting = true;
         //HDR ONLY
         public static Boolean DrawArmature = true;
-        public static String ModelName = "player/t_leet"; // MDL
+        public static String ModelName = "characters/hostage_04"; // MDL
 
         public static string BSPPath = GamePath + "/" + ModFolders[0] + "/maps/" + LevelName + ".bsp";
         public static string MDLPath = GamePath + "/" + ModFolders[0] + "/models/" + ModelName + ".mdl";
         public static string VPKPath = GamePath + "/" + ModFolders[0] + "/" + VpkName + ".vpk"; //TODO
         public static string SNDPath = GamePath + "/" + ModFolders[0] + "/sounds/"; //TODO
 
-		public static float WorldScale = 0.0254f;
+        public static float WorldScale = 0.0254f;
 		public static List<LightmapData> lightmapsData; //Base LightmapData
 		public static int CurrentLightmap = 0; //Lightmap Index Count
 

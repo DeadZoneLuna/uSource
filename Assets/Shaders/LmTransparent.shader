@@ -11,7 +11,7 @@ Shader "Custom/LmTransparent"
 	{
 		Tags { "Queue"="AlphaTest" "IgnoreProjector"="True" }
 		LOD 200
-
+		Cull Off
 		CGPROGRAM
 		#pragma surface surf Lambert alpha
 

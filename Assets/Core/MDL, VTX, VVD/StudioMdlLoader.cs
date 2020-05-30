@@ -187,7 +187,6 @@ namespace Engine.Source
 
         static void DrawArmature()
         {
-            mstudiobone_t[] MDL_BonesInfo = new mstudiobone_t[MDL_Header.bone_count];
             for (Int32 i = 0; i < MDL_Bones.Count; i++)
             {
                 if (ConfigLoader.DrawArmature && MDL_Header.bone_count == MDL_Bones.Count)

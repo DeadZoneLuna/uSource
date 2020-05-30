@@ -10,12 +10,10 @@ namespace Engine.Source
 
         public static Texture2D Load(string MainTexture, string AltTexture = null)
         {
+            //return null;
             tagVTFHEADER VTF_Header = new tagVTFHEADER();
-			bool m_Mipmaps = true;
-			string Path = string.Empty;
-
-            //MainTexture = MainTexture
-            //    .Replace(".vtf", "").Replace("materials/", "");
+            bool m_Mipmaps = true;
+            string Path = string.Empty;
 
             for (int i = 0; i < ConfigLoader.ModFolders.Length; i++)
             {
@@ -29,7 +27,7 @@ namespace Engine.Source
                     return Load(AltTexture);
 
                 Debug.Log(String.Format("{0}: File not found", MainTexture + ".vtf"));
-				return Load("debug/debugempty", null);
+                return Load("debug/debugempty", null);
                 //return null;
             }
 
@@ -52,7 +50,7 @@ namespace Engine.Source
             };
 
             int ImageSize = VTF_Header.Width * VTF_Header.Height * UiBytesPerPixels[(int)VTF_Header.HighResImageFormat];
-			TextureFormat InternalFormat;
+            TextureFormat InternalFormat;
 
             switch (VTF_Header.HighResImageFormat)
             {
@@ -70,7 +68,6 @@ namespace Engine.Source
 
                 case VTFImageFormat.IMAGE_FORMAT_RGB888:
                 case VTFImageFormat.IMAGE_FORMAT_RGB888_BLUESCREEN:
-
                 case VTFImageFormat.IMAGE_FORMAT_BGR888:
                 case VTFImageFormat.IMAGE_FORMAT_BGR888_BLUESCREEN:
                     InternalFormat = TextureFormat.RGB24;
@@ -89,12 +86,12 @@ namespace Engine.Source
                     InternalFormat = TextureFormat.BGRA32;
                     break;
 
-				/*case VTFImageFormat.IMAGE_FORMAT_UV88:
+                /*case VTFImageFormat.IMAGE_FORMAT_UV88:
 					InternalFormat = TextureFormat.RG16;
 					break;*/
 
 
-				default:
+                default:
                     Debug.Log(String.Format("{0}: Unsupported format: {1}", MainTexture + ".vtf", VTF_Header.HighResImageFormat));
                     VTFFileReader.Close();
                     return null;
@@ -109,8 +106,7 @@ namespace Engine.Source
                 VTFFileReader.BaseStream.Seek(VTFFileReader.BaseStream.Length - ImageSize * (VTF_Header.Frames - i), SeekOrigin.Begin);
                 Byte[] VTFFile = VTFFileReader.ReadBytes(ImageSize);
 
-                if (VTF_Header.HighResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888
-                    || VTF_Header.HighResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888_BLUESCREEN)
+                if (VTF_Header.HighResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888 || VTF_Header.HighResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888_BLUESCREEN)
                 {
                     for (Int32 j = 0; j < VTFFile.Length - 1; j += 3)
                     {
@@ -142,42 +138,42 @@ namespace Engine.Source
                 if ((VTF_Header.Flags & (VTFImageFlags.TEXTUREFLAGS_CLAMPS | VTFImageFlags.TEXTUREFLAGS_CLAMPT)) != 0)
                     Frames[i].wrapMode = TextureWrapMode.Clamp;
 
-				if (m_Mipmaps)
-				{
-					Color32[] pixels = Frames[i].GetPixels32();
+                if (m_Mipmaps)
+                {
+                    Color32[] pixels = Frames[i].GetPixels32();
 
-					switch (VTF_Header.HighResImageFormat)
-					{
-						case VTFImageFormat.IMAGE_FORMAT_DXT1:
-						case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
-							Frames[i] = new Texture2D(VTF_Header.Width, VTF_Header.Height, TextureFormat.RGB24, true);
-							break;
+                    switch (VTF_Header.HighResImageFormat)
+                    {
+                        case VTFImageFormat.IMAGE_FORMAT_DXT1:
+                        case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
+                            Frames[i] = new Texture2D(VTF_Header.Width, VTF_Header.Height, TextureFormat.RGB24, true);
+                            break;
 
-						case VTFImageFormat.IMAGE_FORMAT_DXT3:
-						case VTFImageFormat.IMAGE_FORMAT_DXT5:
-							Frames[i] = new Texture2D(VTF_Header.Width, VTF_Header.Height, TextureFormat.RGBA32, true);
-							break;
+                        case VTFImageFormat.IMAGE_FORMAT_DXT3:
+                        case VTFImageFormat.IMAGE_FORMAT_DXT5:
+                            Frames[i] = new Texture2D(VTF_Header.Width, VTF_Header.Height, TextureFormat.RGBA32, true);
+                            break;
 
-						default:
-							Frames[i] = new Texture2D(VTF_Header.Width, VTF_Header.Height, InternalFormat, true);
-							break;
-					}
+                        default:
+                            Frames[i] = new Texture2D(VTF_Header.Width, VTF_Header.Height, InternalFormat, true);
+                            break;
+                    }
 
-					Frames[i].SetPixels32(pixels);
-				}
+                    Frames[i].SetPixels32(pixels);
+                }
 
-				Frames[i].SetPixels32(VTF_Texture.GetPixels32());
+                Frames[i].SetPixels32(VTF_Texture.GetPixels32());
                 Frames[i].Apply();
 
-				if (m_Mipmaps)
-					Frames[i].Compress(true);
+                if (m_Mipmaps)
+                    Frames[i].Compress(true);
 
-				Frames[i].Compress(true);
+                Frames[i].Compress(true);
                 UnityEngine.Object.DestroyImmediate(VTF_Texture);
             }
 
             Frames[0].name = Path;
             return Frames[0];
         }
-	}
+    }
 }
