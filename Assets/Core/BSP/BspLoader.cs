@@ -64,7 +64,7 @@ namespace Engine.Source
                 }
             }
 
-			if (BSP_Header.Lumps[58].FileLen / 56 <= 0)
+            if (BSP_Header.Lumps[58].FileLen / 56 <= 0)
             {
                 BSP_Faces = new dface_t[BSP_Header.Lumps[7].FileLen / 56];
                 BSPFileReader.ReadArray(ref BSP_Faces, BSP_Header.Lumps[7].FileOfs);
@@ -119,15 +119,15 @@ namespace Engine.Source
             BSP_WorldSpawn = new GameObject(BSPName);
             BSP_Brushes = new List<GameObject>();
 
-			//Create new lightmap list
-			ConfigLoader.lightmapsData = new List<LightmapData>();
-			LightmapSettings.lightmapsMode = LightmapsMode.NonDirectional;
+            //Create new lightmap list
+            ConfigLoader.lightmapsData = new List<LightmapData>();
+            LightmapSettings.lightmapsMode = LightmapsMode.NonDirectional;
 
-			LoadEntities();
+            LoadEntities();
             LoadStaticProps();
 
-			BSPFileReader.Close();
-		}
+            BSPFileReader.Close();
+        }
 
         static void LoadEntities()
         {
@@ -200,7 +200,7 @@ namespace Engine.Source
                     FaceIndices[k] = 0;
                     FaceIndices[k + 1] = i;
                     FaceIndices[k + 2] = i + 1;
-				}
+                }
 
                 Vector3 tS = new Vector3(-CTexinfo.TextureVecs[0].x, CTexinfo.TextureVecs[0].z, -CTexinfo.TextureVecs[0].y);
                 Vector3 tT = new Vector3(-CTexinfo.TextureVecs[1].x, CTexinfo.TextureVecs[1].z, -CTexinfo.TextureVecs[1].y);
@@ -251,7 +251,7 @@ namespace Engine.Source
             }
         }
 
-		static void CreateModels()
+        static void CreateModels()
         {
             BSP_Brushes = new List<GameObject>();
 
@@ -271,7 +271,7 @@ namespace Engine.Source
                     MeshInfo[BSP_TexData[BSP_TexInfo[BSP_Faces[i].TexInfo].TexData].NameStringTableID].Add(i);
                 }
 
-				for (Int32 i = 0; i < BSP_TextureStringData.Length; i++)
+                for (Int32 i = 0; i < BSP_TextureStringData.Length; i++)
                 {
                     if (!MeshInfo.ContainsKey(i))
                         continue;
@@ -303,14 +303,14 @@ namespace Engine.Source
 
                     GameObject MeshObject = new GameObject(BSP_TextureStringData[i]);
                     MeshObject.transform.parent = Model.transform;
-					MeshObject.isStatic = true;
+                    MeshObject.isStatic = true;
 
                     MeshRenderer MeshRenderer = MeshObject.AddComponent<MeshRenderer>();
                     MeshRenderer.sharedMaterial = MaterialLoader.Load(BSP_TextureStringData[i]);
-					MeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
-					MeshRenderer.lightmapIndex = ConfigLoader.CurrentLightmap;
+                    MeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+                    MeshRenderer.lightmapIndex = ConfigLoader.CurrentLightmap;
 
-					if (MaterialLoader.HasAnimation)
+                    if (MaterialLoader.HasAnimation)
                     {
                         AnimatedTexture AnimationControlScript = MeshObject.AddComponent<AnimatedTexture>();
                         MaterialLoader.SetupAnimations(ref AnimationControlScript);
@@ -330,12 +330,12 @@ namespace Engine.Source
                     else
                     {
 
-						MeshObject.AddComponent<MeshCollider>();
+                        MeshObject.AddComponent<MeshCollider>();
 
                         List<Vector2> UV2 = new List<Vector2>();
                         Texture2D Lightmap_tex = new Texture2D(1, 1);
 
-						CreateLightMap(Faces, ref Lightmap_tex, ref UV2);
+                        CreateLightMap(Faces, ref Lightmap_tex, ref UV2);
 
                         if (ConfigLoader.LoadLightmapsAsTextureShader)
                             if (MeshRenderer.sharedMaterial != null)
@@ -347,7 +347,7 @@ namespace Engine.Source
                     Mesh.RecalculateNormals();
                 }
 
-			}
+            }
         }
 
         static void CreateDisplacements()
@@ -393,11 +393,11 @@ namespace Engine.Source
                 GameObject MeshObject = new GameObject(BSP_TextureStringData[i]);
                 MeshObject.transform.localScale = new Vector3(1, 1, -1);
                 MeshObject.transform.parent = BSP_WorldSpawn.transform;
-				MeshObject.isStatic = true;
+                MeshObject.isStatic = true;
 
                 MeshRenderer MeshRenderer = MeshObject.AddComponent<MeshRenderer>();
                 MeshRenderer.sharedMaterial = MaterialLoader.Load(BSP_TextureStringData[i]);
-				MeshRenderer.lightmapIndex = ConfigLoader.CurrentLightmap;
+                MeshRenderer.lightmapIndex = ConfigLoader.CurrentLightmap;
 
                 if (MaterialLoader.HasAnimation)
                 {
@@ -417,9 +417,9 @@ namespace Engine.Source
                     List<Vector2> UV2 = new List<Vector2>();
                     Texture2D Lightmap_tex = new Texture2D(1, 1);
 
-					CreateLightMap(Faces, ref Lightmap_tex, ref UV2);
+                    CreateLightMap(Faces, ref Lightmap_tex, ref UV2);
 
-                    if(ConfigLoader.LoadLightmapsAsTextureShader)
+                    if (ConfigLoader.LoadLightmapsAsTextureShader)
                         if (MeshRenderer.sharedMaterial != null)
                             MeshRenderer.sharedMaterial.SetTexture("_LightMap", Lightmap_tex);
 
@@ -570,7 +570,7 @@ namespace Engine.Source
         {
             Texture2D[] LMs = new Texture2D[InpFaces.Count];
 
-			for (Int32 i = 0; i < InpFaces.Count; i++)
+            for (Int32 i = 0; i < InpFaces.Count; i++)
             {
                 if (InpFaces[i].LightOfs == -1)
                     continue;
@@ -581,20 +581,20 @@ namespace Engine.Source
                 for (Int32 j = 0; j < TexPixels.Length; j++)
                 {
                     ColorRGBExp32 ColorRGBExp32 = ConfigLoader.useHDRLighting ? TexLightToLinearHDR(InpFaces[i].LightOfs + (j * 4)) : TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
-					TexPixels[j] = new Color32(ColorRGBExp32.r, ColorRGBExp32.g, ColorRGBExp32.b, 255);
-				}
+                    TexPixels[j] = new Color32(ColorRGBExp32.r, ColorRGBExp32.g, ColorRGBExp32.b, 255);
+                }
 
                 LMs[i].SetPixels32(TexPixels);
-			}
+            }
 
             Rect[] UVs2 = Lightmap_tex.PackTextures(LMs, 1);
-			for (Int32 i = 0; i < InpFaces.Count; i++)
+            for (Int32 i = 0; i < InpFaces.Count; i++)
             {
                 UnityEngine.Object.DestroyImmediate(LMs[i]);
 
-				for (Int32 j = 0; j < InpFaces[i].UV2.Length; j++)
-					UV2.Add(new Vector2((InpFaces[i].UV2[j].x * UVs2[i].width) + UVs2[i].x, (InpFaces[i].UV2[j].y * UVs2[i].height) + UVs2[i].y));
-			}
+                for (Int32 j = 0; j < InpFaces[i].UV2.Length; j++)
+                    UV2.Add(new Vector2((InpFaces[i].UV2[j].x * UVs2[i].width) + UVs2[i].x, (InpFaces[i].UV2[j].y * UVs2[i].height) + UVs2[i].y));
+            }
 
             //Add lightmap in array
             if (!ConfigLoader.LoadLightmapsAsTextureShader)
@@ -603,19 +603,19 @@ namespace Engine.Source
                 LightmapSettings.lightmaps = ConfigLoader.lightmapsData.ToArray();
                 ConfigLoader.CurrentLightmap++;
             }
-			//Add lightmap in array
+            //Add lightmap in array
 
-		}
+        }
 
-		static ColorRGBExp32 TexLightToLinear(long Offset)
+        static ColorRGBExp32 TexLightToLinear(long Offset)
         {
 
-			Offset += BSP_Header.Lumps[58].FileLen / 56 > 0 ? BSP_Header.Lumps[53].FileOfs : BSP_Header.Lumps[8].FileOfs;
+            Offset += BSP_Header.Lumps[58].FileLen / 56 > 0 ? BSP_Header.Lumps[53].FileOfs : BSP_Header.Lumps[8].FileOfs;
 
-			ColorRGBExp32 ColorRGBExp32 = new ColorRGBExp32();
+            ColorRGBExp32 ColorRGBExp32 = new ColorRGBExp32();
             BSPFileReader.ReadType(ref ColorRGBExp32, Offset);
 
-			float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
+            float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
 
             ColorRGBExp32.r = TexLightToLinearB(ColorRGBExp32.r, Pow);
             ColorRGBExp32.g = TexLightToLinearB(ColorRGBExp32.g, Pow);
@@ -635,7 +635,7 @@ namespace Engine.Source
             float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
 
             //https://github.com/lewa-j/Unity-Source-Tools/blob/834869c8ad7ad8924af62e11e9e55486e18203e8/Assets/Code/Read/BSPFile.cs#L337
-            Color32 col = new Color(TexLightToLinearF(ColorRGBExp32.r, Pow), TexLightToLinearF(ColorRGBExp32.g, Pow), TexLightToLinearF(ColorRGBExp32.b, Pow), 1f).gamma; 
+            Color32 col = new Color(TexLightToLinearF(ColorRGBExp32.r, Pow), TexLightToLinearF(ColorRGBExp32.g, Pow), TexLightToLinearF(ColorRGBExp32.b, Pow), 1f).gamma;
             ColorRGBExp32.r = col.r;
             ColorRGBExp32.g = col.g;
             ColorRGBExp32.b = col.b;
@@ -694,25 +694,25 @@ namespace Engine.Source
             File.Delete(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
         }
 
-		static void VPKFile(string Value)
-		{
-			if (Directory.Exists(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile"))
-				return;
+        static void VPKFile(string Value)
+        {
+            if (Directory.Exists(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile"))
+                return;
 
-			BSPFileReader.BaseStream.Seek(BSP_Header.Lumps[40].FileOfs, SeekOrigin.Begin);
-			Byte[] BSP_PakFile = BSPFileReader.ReadBytes(BSP_Header.Lumps[40].FileLen);
+            BSPFileReader.BaseStream.Seek(BSP_Header.Lumps[40].FileOfs, SeekOrigin.Begin);
+            Byte[] BSP_PakFile = BSPFileReader.ReadBytes(BSP_Header.Lumps[40].FileLen);
 
-			File.WriteAllBytes(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip", BSP_PakFile);
-			Directory.CreateDirectory(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
+            File.WriteAllBytes(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip", BSP_PakFile);
+            Directory.CreateDirectory(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
 
-			ZipFile PakFile = ZipFile.Read(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
-			PakFile.ExtractAll(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
-			PakFile.Dispose();
+            ZipFile PakFile = ZipFile.Read(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
+            PakFile.ExtractAll(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
+            PakFile.Dispose();
 
-			File.Delete(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
-		}
+            File.Delete(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
+        }
 
-		static void LoadStaticProps()
+        static void LoadStaticProps()
         {
             BSPFileReader.BaseStream.Seek(BSP_Header.Lumps[35].FileOfs, SeekOrigin.Begin);
             Int32 GameLumpCount = BSPFileReader.ReadInt32();
@@ -726,9 +726,9 @@ namespace Engine.Source
                 {
                     BSPFileReader.BaseStream.Seek(BSP_GameLump[i].FileOfs, SeekOrigin.Begin);
 
-					var Start = BSPFileReader.BaseStream.Position;
+                    var Start = BSPFileReader.BaseStream.Position;
 
-					String[] ModelEntries = new String[BSPFileReader.ReadInt32()];
+                    String[] ModelEntries = new String[BSPFileReader.ReadInt32()];
                     for (Int32 j = 0; j < ModelEntries.Length; j++)
                     {
                         ModelEntries[j] = new String(BSPFileReader.ReadChars(128)).Replace(".mdl", "");
@@ -745,19 +745,19 @@ namespace Engine.Source
 
                     //REDxEYE "fix".
                     Int32 prop_size = 0;
-					try
-					{
-						prop_size = (Int32)((BSP_GameLump[i].FileLen - (BSPFileReader.BaseStream.Position - Start)) / nStaticProps);
-					}
-					catch (DivideByZeroException)
-					{
-						Debug.Log(String.Format("Static props not found. Division of {0} by zero.", nStaticProps));
-					}
-
-					for (Int32 l = 0; l < nStaticProps; l++)
+                    try
                     {
-						var prop_start = BSPFileReader.BaseStream.Position;
-						StaticPropLumpV4_t StaticPropLump_t = new StaticPropLumpV4_t();
+                        prop_size = (Int32)((BSP_GameLump[i].FileLen - (BSPFileReader.BaseStream.Position - Start)) / nStaticProps);
+                    }
+                    catch (DivideByZeroException)
+                    {
+                        Debug.Log(String.Format("Static props not found. Division of {0} by zero.", nStaticProps));
+                    }
+
+                    for (Int32 l = 0; l < nStaticProps; l++)
+                    {
+                        var prop_start = BSPFileReader.BaseStream.Position;
+                        StaticPropLumpV4_t StaticPropLump_t = new StaticPropLumpV4_t();
                         BSPFileReader.ReadType(ref StaticPropLump_t);
 
                         switch (BSP_GameLump[i].Version)
@@ -782,7 +782,7 @@ namespace Engine.Source
                                 break;
                         }
 
-						BSPFileReader.BaseStream.Seek(prop_start + prop_size, 0);
+                        BSPFileReader.BaseStream.Seek(prop_start + prop_size, 0);
 
                         String StaticPropName = ModelEntries[StaticPropLump_t.m_PropType];
                         Transform MdlTransform = StudioMDLLoader.Load(StaticPropName);

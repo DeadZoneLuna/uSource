@@ -17,9 +17,9 @@ enum Angle
 
 namespace Engine.Source
 {
-	class MathUtils
+    class MathUtils
     {
-		public static Vector3 SwapZY(Vector3 Inp)
+        public static Vector3 SwapZY(Vector3 Inp)
         {
             return new Vector3(-Inp.x, Inp.z, -Inp.y);
         }
@@ -39,5 +39,4 @@ namespace Engine.Source
             return new Vector3(-Inp.x, -Inp.z, Inp.y);
         }
     }
-
 }

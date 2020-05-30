@@ -52,8 +52,8 @@ namespace Engine.Source
             if (String.IsNullOrEmpty(Path))
             {
                 Debug.Log(String.Format("{0}: File not found", MaterialName + ".vmt"));
-				return Load("debug/debugempty");
-			}
+                return Load("debug/debugempty");
+            }
 
             Items = KeyValueParse.Load(File.ReadAllLines(Path));
 
@@ -67,19 +67,19 @@ namespace Engine.Source
 
             Material = new Material(GetShader());
             Material.color = GetColor();
-			Material.name = MaterialName;
+            Material.name = MaterialName;
 
 
-			if (Items.ContainsKey("$basetexture2"))
+            if (Items.ContainsKey("$basetexture2"))
                 Material.SetTexture("_BlendTex", TextureLoader.Load(Items["$basetexture2"]));
 
             if (Items.ContainsKey("$basetexture"))
                 Material.mainTexture = TextureLoader.Load(Items["$basetexture"]);
 
-			if (Items.ContainsKey("$bumpmap"))
-			{
-				Material.SetTexture("_BumpMap", TextureLoader.Load(Items["$bumpmap"]));
-			}
+            if (Items.ContainsKey("$bumpmap"))
+            {
+                Material.SetTexture("_BumpMap", TextureLoader.Load(Items["$bumpmap"]));
+            }
 
             if (Items.ContainsKey("$surfaceprop"))
                 Material.name = Items["$surfaceprop"];
@@ -89,7 +89,7 @@ namespace Engine.Source
 
         static Shader GetShader()
         {
-             if (IsTrue("$additive"))
+            if (IsTrue("$additive"))
                 return Shader.Find("Custom/Additive");
 
             String[] ADictionary = { "$translucent", "$alphatest" };
@@ -99,19 +99,19 @@ namespace Engine.Source
                 if (IsTrue(ADictionary[i]))
                 {
                     if (Items.ContainsKey("lightmappedgeneric"))
-						return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/Transparent-VertexLit") : Shader.Find("Custom/LmTransparent");
+                        return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/Transparent-VertexLit") : Shader.Find("Custom/LmTransparent");
 
                     return Shader.Find("Custom/Transparent-VertexLit");//Shader.Find("Transparent/Diffuse");
                 }
             }
 
-			if (Items.ContainsKey("$selfillum"))
-				return Shader.Find("Custom/SelfIllumiumAlpha");
+            if (Items.ContainsKey("$selfillum"))
+                return Shader.Find("Custom/SelfIllumiumAlpha");
 
-			if (Items.ContainsKey("lightmappedgeneric"))
-				return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("VertexLit") : Shader.Find("Lightmapped/Diffuse");//return Shader.Find("Diffuse");
+            if (Items.ContainsKey("lightmappedgeneric"))
+                return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("VertexLit") : Shader.Find("Lightmapped/Diffuse");//return Shader.Find("Diffuse");
 
-			if (Items.ContainsKey("worldvertextransition"))
+            if (Items.ContainsKey("worldvertextransition"))
                 return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/WorldVertexTransition") : Shader.Find("Custom/WorldVertexTransitionLM");
 
             if (Items.ContainsKey("unlitgeneric") || Items.ContainsKey("unlittwotexture"))
@@ -122,9 +122,9 @@ namespace Engine.Source
 
         static Color32 GetColor()
         {
-			Color32 MaterialColor = new Color32(255, 255, 255, 255);
+            Color32 MaterialColor = new Color32(255, 255, 255, 255);
 
-			if (Items.ContainsKey("$color"))
+            if (Items.ContainsKey("$color"))
             {
                 String[] Color = Items["$color"].Replace(".", "").Trim('[', ']', '{', '}').Trim().Split(' ');
                 MaterialColor = new Color32((byte)Int64.Parse(Color[0]), (byte)Int64.Parse(Color[1]), (byte)Int64.Parse(Color[2]), 255);

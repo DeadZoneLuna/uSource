@@ -16,12 +16,12 @@ namespace Engine.Source
     {
         public List<string> Data;
 
-		//public Vector3 Origin;
-		public Quaternion Angles; // QAngle
-		void OnDrawGizmos()
+        //public Vector3 Origin;
+        public Quaternion Angles; // QAngle
+        void OnDrawGizmos()
         {
             Gizmos.DrawCube(transform.position, Vector3.one / 5f);
-		}
+        }
 
         void OnDrawGizmosSelected()
         {
@@ -29,13 +29,13 @@ namespace Engine.Source
             Gizmos.DrawCube(transform.position, Vector3.one / 5f);
         }
 
-		public void Configure(List<String> Data)
+        public void Configure(List<String> Data)
         {
 
             this.Data = Data;
 
             String Classname = Data[Data.FindIndex(n => n == "classname") + 1], Targetname = Data[Data.FindIndex(n => n == "targetname") + 1];
-			name = Classname;
+            name = Classname;
 
             if (Data.Contains("origin"))
             {
@@ -66,7 +66,7 @@ namespace Engine.Source
                 for (Int32 i = 0; i < transform.childCount; i++)
                 {
                     GameObject Child = transform.GetChild(i).gameObject;
-					Child.SetActive(false);
+                    Child.SetActive(false);
                     Child.AddComponent<BoxCollider>().isTrigger = true;
                 }
             }
@@ -82,10 +82,10 @@ namespace Engine.Source
                 //TODO
             }
 
-			if(Classname.Equals("light_spot"))
-			{
-				//TODO
-			}
+            if (Classname.Equals("light_spot"))
+            {
+                //TODO
+            }
 
             if (Classname.Equals("info_player_terrorist"))
             {
@@ -102,7 +102,7 @@ namespace Engine.Source
                 StudioMDLLoader.Load("editor/playerstart").SetParent(transform, false);
             }
 
-            if(Classname.Equals("hostage_entity"))//hostage_entity
+            if (Classname.Equals("hostage_entity"))//hostage_entity
             {
                 String[] hostages = new[] { "characters/hostage_01", "characters/hostage_02", "characters/hostage_03", "characters/hostage_04" };
                 StudioMDLLoader.Load(hostages[UnityEngine.Random.Range(0, hostages.Length)]).SetParent(transform, false);
@@ -120,7 +120,7 @@ namespace Engine.Source
                 }
             }
 
-            if(Classname.Contains("prop_") || Classname.Contains("npc_"))
+            if (Classname.Contains("prop_") || Classname.Contains("npc_"))
             {
                 string ModelName = Data[Data.FindIndex(n => n == "model") + 1];
                 StudioMDLLoader.Load(ModelName).SetParent(transform, false);
@@ -152,8 +152,6 @@ namespace Engine.Source
                     transform.localScale = new Vector3(ConfigLoader.WorldScale * DecalScale, ConfigLoader.WorldScale * DecalScale, 1);
                 }
             }
-		}
-
-	}
-
+        }
+    }
 }

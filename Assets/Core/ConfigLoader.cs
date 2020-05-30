@@ -55,7 +55,7 @@ namespace Engine.Source
         public static Boolean VpkUse = false; // Use VPK (not fully implemented)
         public static Boolean LoadMDL = false; //Load Only MDL file
         public static Boolean LoadLightmapsAsTextureShader = false;
-		public static Boolean LoadMap = true;
+        public static Boolean LoadMap = true;
         public static Boolean LoadInfoDecals = false; //This is just an example, you need to implement a complete decal system.
         //HDR ONLY
         public static Boolean useHDRLighting = true;
@@ -69,19 +69,19 @@ namespace Engine.Source
         public static string SNDPath = GamePath + "/" + ModFolders[0] + "/sounds/"; //TODO
 
         public static float WorldScale = 0.0254f;
-		public static List<LightmapData> lightmapsData; //Base LightmapData
-		public static int CurrentLightmap = 0; //Lightmap Index Count
+        public static List<LightmapData> lightmapsData; //Base LightmapData
+        public static int CurrentLightmap = 0; //Lightmap Index Count
 
-		void Start()
-		{
-			if (!LoadMDL && LoadMap)
-			{
-				BspLoader.Load(LevelName);
-			} 
+        void Start()
+        {
+            if (!LoadMDL && LoadMap)
+            {
+                BspLoader.Load(LevelName);
+            }
             else if (LoadMDL && !LoadMap)
-			{
-				StudioMDLLoader.Load(ModelName);
-			}
+            {
+                StudioMDLLoader.Load(ModelName);
+            }
         }
     }
 }
