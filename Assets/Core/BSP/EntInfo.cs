@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
 using System;
-using _Decal;
+//using _Decal;
 
 //			ANGLES
 //			X pitch +down/-up
