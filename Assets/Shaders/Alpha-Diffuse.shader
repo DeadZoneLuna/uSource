@@ -1,6 +1,6 @@
-﻿// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
+// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
-Shader "Custom/Transparent" {
+Shader "Legacy Shaders/Transparent/Diffuse" {
 Properties {
 	_Color ("Main Color", Color) = (1,1,1,1)
 	_MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
@@ -9,7 +9,7 @@ Properties {
 SubShader {
 	Tags {"Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent"}
 	LOD 200
-	Cull Off
+
 CGPROGRAM
 #pragma surface surf Lambert alpha:fade
 

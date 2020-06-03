@@ -49,7 +49,7 @@ namespace Engine.Source
     {
         public static String GamePath = @"././SourceGames";
         public static readonly String[] ModFolders = { "cstrike", "hl2" };
-        public static String LevelName = "cs_office"; // BSP
+        public static String LevelName = "test_angles"; // BSP
         public static String VpkName = "cstrike_pak_dir"; // VPK - TODO
         public static Boolean VpkUse = false; // Use VPK (not fully implemented)
         public static Boolean LoadMDL = false; //Load Only MDL file
@@ -57,6 +57,7 @@ namespace Engine.Source
         public static Boolean use3DSkybox = true;
         public static Boolean LoadMap = true;
         public static Boolean LoadInfoDecals = false; //This is just an example, you need to implement a complete decal system.
+        public static Boolean DynamicLight = false;
         //HDR ONLY
         public static Boolean useHDRLighting = true;
         //HDR ONLY
@@ -67,8 +68,19 @@ namespace Engine.Source
         public static string MDLPath = GamePath + "/" + ModFolders[0] + "/models/" + ModelName + ".mdl";
         public static string VPKPath = GamePath + "/" + ModFolders[0] + "/" + VpkName + ".vpk"; //TODO
         public static string SNDPath = GamePath + "/" + ModFolders[0] + "/sounds/"; //TODO
+        public static string _PakPath
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return Application.persistentDataPath + "/";
+#else
+                return Application.dataPath + "/_PakLevel/";
+#endif
+            }
+        }
 
-        public static float WorldScale = 0.0254f;
+        public const float WorldScale = 0.0254f;
         public static List<LightmapData> lightmapsData; //Base LightmapData
         public static int CurrentLightmap = 0; //Lightmap Index Count
 

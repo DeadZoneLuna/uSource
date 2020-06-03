@@ -15,10 +15,15 @@ namespace Engine.Source
             bool m_Mipmaps = true;
             string Path = string.Empty;
 
-            for (int i = 0; i < ConfigLoader.ModFolders.Length; i++)
+            if (File.Exists(System.IO.Path.Combine(ConfigLoader._PakPath, ConfigLoader.LevelName + "_pakFile/materials/" + MainTexture + ".vtf")))
+                Path = System.IO.Path.Combine(ConfigLoader._PakPath, ConfigLoader.LevelName + "_pakFile/materials/" + MainTexture + ".vtf");
+            else
             {
-                if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/materials/" + MainTexture + ".vtf"))
-                    Path = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/materials/" + MainTexture + ".vtf";
+                for (int i = 0; i < ConfigLoader.ModFolders.Length; i++)
+                {
+                    if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/materials/" + MainTexture + ".vtf"))
+                        Path = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/materials/" + MainTexture + ".vtf";
+                }
             }
 
             if (string.IsNullOrEmpty(Path))
@@ -105,7 +110,6 @@ namespace Engine.Source
 
                 VTFFileReader.BaseStream.Seek(VTFFileReader.BaseStream.Length - ImageSize * (VTF_Header.Frames - i), SeekOrigin.Begin);
                 Byte[] VTFFile = VTFFileReader.ReadBytes(ImageSize);
-
                 if (VTF_Header.HighResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888 || VTF_Header.HighResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888_BLUESCREEN)
                 {
                     for (Int32 j = 0; j < VTFFile.Length - 1; j += 3)
@@ -171,8 +175,9 @@ namespace Engine.Source
                 Frames[i].Compress(true);
                 UnityEngine.Object.DestroyImmediate(VTF_Texture);
             }
-
+            VTFFileReader.BaseStream.Dispose();
             Frames[0].name = Path;
+
             return Frames[0];
         }
     }

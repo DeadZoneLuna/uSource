@@ -126,7 +126,7 @@ namespace Engine.Source
             LoadEntities();
             LoadStaticProps();
 
-            BSPFileReader.Close();
+            BSPFileReader.BaseStream.Dispose();//.Close();
         }
 
         static void LoadEntities()
@@ -667,49 +667,63 @@ namespace Engine.Source
                 Material.SetTextureOffset(Side, new Vector2(0, 1));
             }
 
-            Material.SetTexture("_FrontTex", TextureLoader.Load("skybox/" + LDR + "rt", "skybox/" + Base + "rt"));
-            Material.SetTexture("_BackTex", TextureLoader.Load("skybox/" + LDR + "lf", "skybox/" + Base + "lf"));
-            Material.SetTexture("_LeftTex", TextureLoader.Load("skybox/" + LDR + "ft", "skybox/" + Base + "ft"));
-            Material.SetTexture("_RightTex", TextureLoader.Load("skybox/" + LDR + "bk", "skybox/" + Base + "bk"));
-            Material.SetTexture("_UpTex", TextureLoader.Load("skybox/" + LDR + "up", "skybox/" + Base + "up"));
+            Texture _FrontTex = TextureLoader.Load("skybox/" + LDR + "rt", "skybox/" + Base + "rt");
+            _FrontTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _BackTex = TextureLoader.Load("skybox/" + LDR + "lf", "skybox/" + Base + "lf");
+            _BackTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _LeftTex = TextureLoader.Load("skybox/" + LDR + "ft", "skybox/" + Base + "ft");
+            _LeftTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _RightTex = TextureLoader.Load("skybox/" + LDR + "bk", "skybox/" + Base + "bk");
+            _RightTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _UpTex = TextureLoader.Load("skybox/" + LDR + "up", "skybox/" + Base + "up");
+            _UpTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _DownTex = TextureLoader.Load("skybox/" + LDR + "dn", "skybox/" + Base + "dn");
+            _DownTex.wrapMode = TextureWrapMode.Clamp;
+
+            Material.SetTexture("_FrontTex", _FrontTex);
+            Material.SetTexture("_BackTex", _BackTex);
+            Material.SetTexture("_LeftTex", _LeftTex);
+            Material.SetTexture("_RightTex", _RightTex);
+            Material.SetTexture("_UpTex", _UpTex);
+            Material.SetTexture("_DownTex", _DownTex);
 
             RenderSettings.skybox = Material;
         }
 
         static void UnpackPakFile()
         {
-            if (Directory.Exists(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile"))
+            if (Directory.Exists(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile"))
                 return;
 
             BSPFileReader.BaseStream.Seek(BSP_Header.Lumps[40].FileOfs, SeekOrigin.Begin);
             Byte[] BSP_PakFile = BSPFileReader.ReadBytes(BSP_Header.Lumps[40].FileLen);
 
-            File.WriteAllBytes(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip", BSP_PakFile);
-            Directory.CreateDirectory(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
+            Directory.CreateDirectory(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile");
+            File.WriteAllBytes(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile.zip", BSP_PakFile);
 
-            ZipFile PakFile = ZipFile.Read(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
-            PakFile.ExtractAll(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
+            ZipFile PakFile = ZipFile.Read(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile.zip");
+            PakFile.ExtractAll(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile", ExtractExistingFileAction.DoNotOverwrite);
             PakFile.Dispose();
 
-            File.Delete(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
+            File.Delete(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile.zip");
         }
 
         static void VPKFile(string Value)
         {
-            if (Directory.Exists(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile"))
+            if (Directory.Exists(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile"))
                 return;
 
             BSPFileReader.BaseStream.Seek(BSP_Header.Lumps[40].FileOfs, SeekOrigin.Begin);
             Byte[] BSP_PakFile = BSPFileReader.ReadBytes(BSP_Header.Lumps[40].FileLen);
 
-            File.WriteAllBytes(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip", BSP_PakFile);
-            Directory.CreateDirectory(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
+            File.WriteAllBytes(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile.zip", BSP_PakFile);
+            Directory.CreateDirectory(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile");
 
-            ZipFile PakFile = ZipFile.Read(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
-            PakFile.ExtractAll(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile");
+            ZipFile PakFile = ZipFile.Read(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile.zip");
+            PakFile.ExtractAll(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile");
             PakFile.Dispose();
 
-            File.Delete(Application.persistentDataPath + "/" + BSP_WorldSpawn.name + "_pakFile.zip");
+            File.Delete(ConfigLoader._PakPath + ConfigLoader.LevelName + "_pakFile.zip");
         }
 
         static void LoadStaticProps()

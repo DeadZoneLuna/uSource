@@ -38,8 +38,8 @@ namespace Engine.Source
                 .Replace(".vmt", "")
                 .Replace("materials/", "");
 
-            if (File.Exists(Application.persistentDataPath + "/" + ConfigLoader.LevelName + "_pakFile/materials/" + MaterialName + ".vmt"))
-                Path = Application.persistentDataPath + "/" + ConfigLoader.LevelName + "_pakFile/materials/" + MaterialName + ".vmt";
+            if (File.Exists(System.IO.Path.Combine(ConfigLoader._PakPath, ConfigLoader.LevelName + "_pakFile/materials/" + MaterialName + ".vmt")))
+                Path = System.IO.Path.Combine(ConfigLoader._PakPath, ConfigLoader.LevelName + "_pakFile/materials/" + MaterialName + ".vmt");
             else
             {
                 for (int i = 0; i < ConfigLoader.ModFolders.Length; i++)
@@ -99,7 +99,8 @@ namespace Engine.Source
                 if (IsTrue(ADictionary[i]))
                 {
                     if (Items.ContainsKey("lightmappedgeneric"))
-                        return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/Transparent-VertexLit") : Shader.Find("Custom/LmTransparent");
+                        return ConfigLoader.DynamicLight ? Shader.Find("Custom/Transparent") : !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/Transparent-VertexLit") : Shader.Find("Custom/LmTransparent");
+
 
                     return Shader.Find("Custom/Transparent-VertexLit");//Shader.Find("Transparent/Diffuse");
                 }
@@ -109,10 +110,10 @@ namespace Engine.Source
                 return Shader.Find("Custom/SelfIllumiumAlpha");
 
             if (Items.ContainsKey("lightmappedgeneric"))
-                return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("VertexLit") : Shader.Find("Lightmapped/Diffuse");//return Shader.Find("Diffuse");
+                return ConfigLoader.DynamicLight ? Shader.Find("Diffuse") : !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("VertexLit") : Shader.Find("Lightmapped/Diffuse");//return Shader.Find("Diffuse");
 
             if (Items.ContainsKey("worldvertextransition"))
-                return !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/WorldVertexTransition") : Shader.Find("Custom/WorldVertexTransitionLM");
+                return ConfigLoader.DynamicLight ? Shader.Find("Custom/WorldVertexTransitionForward") : !ConfigLoader.LoadLightmapsAsTextureShader ? Shader.Find("Custom/WorldVertexTransition") : Shader.Find("Custom/WorldVertexTransitionLM");
 
             if (Items.ContainsKey("unlitgeneric") || Items.ContainsKey("unlittwotexture"))
                 return Shader.Find("Mobile/Unlit (Supports Lightmap)");

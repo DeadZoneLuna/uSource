@@ -1,15 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 
-public class MDLArmatureInfo : MonoBehaviour {
-
+public class MDLArmatureInfo : MonoBehaviour 
+{
 	public GameObject ModelObject;
 	public Transform rootNode;
 	public Transform[] childNodes;
 	//private TextGizmo TG;
-
+#if UNITY_EDITOR
 	public void OnDrawGizmosSelected()
 	{
 		if (ModelObject != null)
@@ -31,7 +33,7 @@ public class MDLArmatureInfo : MonoBehaviour {
 			}
 		}
 	}
-
+#endif
 	public void PopulateArmature()
 	{
 		childNodes = rootNode.GetComponentsInChildren<Transform>();

@@ -47,7 +47,7 @@ namespace Engine.Source
         public static Transform Load(String ModelName)
         {
             Clear();
-
+            //return new GameObject(ModelName).transform;
             if (ModelsInRAM == null)
                 ModelsInRAM = new Dictionary<string, Transform>();
 
@@ -60,12 +60,15 @@ namespace Engine.Source
             if (ModelsInRAM.ContainsKey(ModelName))
                 return UnityEngine.Object.Instantiate(ModelsInRAM[ModelName]);
 
-            for (Int32 i = 0; i < ConfigLoader.ModFolders.Length; i++)
+            if (File.Exists(Path.Combine(ConfigLoader._PakPath, ConfigLoader.LevelName + "_pakFile/models/" + ModelName + ".mdl")))
+                OpenPath = Path.Combine(ConfigLoader._PakPath, ConfigLoader.LevelName + "_pakFile/models/" + ModelName);
+            else
             {
-                if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/models/" + ModelName + ".mdl") && !ConfigLoader.VpkUse)
-                    OpenPath = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/models/" + ModelName;
-                else if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + ConfigLoader.VpkName + ".vpk") && ConfigLoader.VpkUse)
-                    OpenPath = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + ConfigLoader.VpkName + ".vpk";
+                for (Int32 i = 0; i < ConfigLoader.ModFolders.Length; i++)
+                {
+                    if (File.Exists(ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/models/" + ModelName + ".mdl"))
+                        OpenPath = ConfigLoader.GamePath + "/" + ConfigLoader.ModFolders[i] + "/models/" + ModelName;
+                }
             }
 
             ModelObject = new GameObject(ModelName);
@@ -116,6 +119,7 @@ namespace Engine.Source
             }
 
             ModelsInRAM.Add(ModelName, ModelObject.transform);
+            ModelFileLoader.BaseStream.Dispose();
             return ModelObject.transform;
         }
 
@@ -233,7 +237,7 @@ namespace Engine.Source
             }
 
             Mesh pMesh = new Mesh();
-            ModelObject.AddComponent<MeshCollider>().sharedMesh = pMesh;
+            //ModelObject.AddComponent<MeshCollider>().sharedMesh = pMesh;
 
             pMesh.subMeshCount = vLod.numMeshes;
 

@@ -19,6 +19,24 @@ namespace Engine.Source
 {
     class MathUtils
     {
+        public static float Fix(float angle)
+        {
+            while (angle < 0)
+                angle += 270;
+            while (angle > 270)
+                angle -= 270;
+
+            return angle;
+        }
+
+        public static Vector3 FixupAngles(Vector3 v)
+        {
+            v.x = Fix(v.x);
+            v.y = Fix(v.y);
+            v.z = Fix(v.z);
+            return v;
+        }
+
         public static Vector3 SwapZY(Vector3 Inp)
         {
             return new Vector3(-Inp.x, Inp.z, -Inp.y);
