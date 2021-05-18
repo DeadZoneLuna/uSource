@@ -92,9 +92,9 @@ namespace uSource.Formats.Source.VPK
 			// skip unneeded bytes
 			if (Version == 1 || Version == 2)
 			{
-				Reader.ReadInt32(); // - TreeSize;
+				Reader.ReadUInt32(); // - TreeSize;
 				if (Version == 2)
-					Reader.ReadBytes(12);
+					Reader.ReadBytes(16);
 			}
 
 			AddMainPart(FileName, Stream);
