@@ -21,7 +21,7 @@ namespace uSource
         /// <param name="variable">The tested enum.</param>
         /// <param name="value">The value to test.</param>
         /// <returns>True if the flag is set. Otherwise false.</returns>
-        public static bool HasFlag(this Enum variable, Enum value)
+        public static Boolean HasFlag(this Enum variable, Enum value)
         {
             // check if from the same type.
             if (variable.GetType() != value.GetType())
@@ -40,30 +40,30 @@ namespace uSource
 
     public static class Converters
     {
-        public static string ToString(this string param)
+        public static String ToString(this String param)
         {
             return param;
         }
 
-        public static int ToInt32(this string param, int defValue = 0)
+        public static Int32 ToInt32(this String param, Int32 defValue = 0)
         {
-            int intVal;
-            float value;
-            return (param != null) ? (int.TryParse(param, out intVal) ? intVal : (float.TryParse(param, NumberStyles.Float, CultureInfo.InvariantCulture, out value) ? ((int)value) : defValue)) : defValue;
+            Int32 intVal;
+            Single value;
+            return (param != null) ? (Int32.TryParse(param, out intVal) ? intVal : (Single.TryParse(param, NumberStyles.Float, CultureInfo.InvariantCulture, out value) ? ((Int32)value) : defValue)) : defValue;
         }
 
-        public static bool ToBoolean(this string param)
+        public static Boolean ToBoolean(this String param)
         {
             return param != null && ToInt32(param) != 0;
         }
 
-        public static float ToSingle(this string param, float defValue = 0)
+        public static Single ToSingle(this String param, Single defValue = 0)
         {
-            float value;
-            return (param == null) ? defValue : (float.TryParse(param.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out value) ? value : 0f);
+            Single value;
+            return (param == null) ? defValue : (Single.TryParse(param.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out value) ? value : 0f);
         }
 
-        public static Vector3 ToVector3(this string param)
+        public static Vector3 ToVector3(this String param)
         {
             var split0 = param.IndexOf(' ');
             var split1 = split0 == -1 ? -1 : param.IndexOf(' ', split0 + 1);
@@ -75,7 +75,7 @@ namespace uSource
             return new Vector3(x, y, z);
         }
 
-        public static Color32 ToColor32(this string param)
+        public static Color32 ToColor32(this String param)
         {
             if (param == null) return new Color32(0x00, 0x00, 0x00, 255);
 
@@ -88,10 +88,10 @@ namespace uSource
             var b = split1 == -1 ? 0 : split2 == -1 ? ToInt32(param.Substring(split1 + 1)) : ToInt32(param.Substring(split1 + 1, split2 - split1 - 1));
             var a = split2 == -1 ? 255 : ToInt32(param.Substring(split2 + 1));
 
-            return new Color32((byte)r, (byte)g, (byte)b, (byte)a);
+            return new Color32((Byte)r, (Byte)g, (Byte)b, (Byte)a);
         }
 
-        public static Color ToColor(this string param)
+        public static Color ToColor(this String param)
         {
             if (param == null) return new Color(0, 0, 0, 1);
 
@@ -104,7 +104,7 @@ namespace uSource
             var b = split1 == -1 ? 0 : split2 == -1 ? ToInt32(param.Substring(split1 + 1)) : ToInt32(param.Substring(split1 + 1, split2 - split1 - 1));
             var a = split2 == -1 ? 255 : ToInt32(param.Substring(split2 + 1));
 
-            //float Pow = Mathf.Pow(2, a / 255f);
+            //Single Pow = Mathf.Pow(2, a / 255f);
 
             //pow( r / 255.0, 2.2 ) * 255
 
@@ -113,12 +113,23 @@ namespace uSource
             return color;
         }
 
-        static float ToLinearF(int color)
+        static Single ToLinearF(Int32 color)
         {
             return Mathf.Clamp(color, 0, 255) / 255.0f;
         }
 
-        public static Vector4 ToColorVec(this string param)
+        public static Single SRGB2Linear(this Single s)
+        {
+            Single output;
+            if (s <= 0.0404482362771082f)
+                output = s / 12.92f;
+            else
+                output = Mathf.Pow(((s + 0.055f) / 1.055f), 2.4f);
+
+            return output;
+        }
+
+        public static Vector4 ToColorVec(this String param)
         {
             if (param == null) return new Color(0, 0, 0, 200);
 
@@ -129,7 +140,7 @@ namespace uSource
             var r = split0 == -1 ? ToInt32(param) : ToInt32(param.Substring(0, split0));
             var g = split0 == -1 ? r : split1 == -1 ? ToInt32(param.Substring(split0 + 1)) : ToInt32(param.Substring(split0 + 1, split1 - split0 - 1));
             var b = split1 == -1 ? g : split2 == -1 ? ToInt32(param.Substring(split1 + 1)) : ToInt32(param.Substring(split1 + 1, split2 - split1 - 1));
-            var a = split2 == -1 ? b : ToInt32(param.Substring(split2 + 1));
+            var a = split2 == -1 ? 200 : ToInt32(param.Substring(split2 + 1));
 
             return new Vector4(r, g, b, a);
         }
@@ -143,7 +154,7 @@ namespace uSource
             return color;
         }
 
-        public static Int32 ToAlpha(this string param)
+        public static Int32 ToAlpha(this String param)
         {
             if (param == null) return 255;
 
@@ -152,199 +163,6 @@ namespace uSource
             var split2 = split1 == -1 ? -1 : param.IndexOf(' ', split1 + 1);
 
             return split2 == -1 ? 255 : ToInt32(param.Substring(split2 + 1));
-        }
-    }
-
-    [System.Serializable]
-    public struct HSBColor
-    {
-        public float h;
-        public float s;
-        public float b;
-        public float a;
-
-        public HSBColor(float h, float s, float b, float a)
-        {
-            this.h = h;
-            this.s = s;
-            this.b = b;
-            this.a = a;
-        }
-
-        public HSBColor(float h, float s, float b)
-        {
-            this.h = h;
-            this.s = s;
-            this.b = b;
-            this.a = 1f;
-        }
-
-        public HSBColor(Color col)
-        {
-            HSBColor temp = col;
-            h = temp.h;
-            s = temp.s;
-            b = temp.b;
-            a = temp.a;
-        }
-
-        public static implicit operator HSBColor(Color color)
-        {
-            HSBColor ret = new HSBColor(0f, 0f, 0f, color.a);
-
-            float r = color.r;
-            float g = color.g;
-            float b = color.b;
-
-            float max = Mathf.Max(r, Mathf.Max(g, b));
-
-            if (max <= 0)
-            {
-                return ret;
-            }
-
-            float min = Mathf.Min(r, Mathf.Min(g, b));
-            float dif = max - min;
-
-            if (max > min)
-            {
-                if (g == max)
-                {
-                    ret.h = (b - r) / dif * 60f + 120f;
-                }
-                else if (b == max)
-                {
-                    ret.h = (r - g) / dif * 60f + 240f;
-                }
-                else if (b > g)
-                {
-                    ret.h = (g - b) / dif * 60f + 360f;
-                }
-                else
-                {
-                    ret.h = (g - b) / dif * 60f;
-                }
-                if (ret.h < 0)
-                {
-                    ret.h = ret.h + 360f;
-                }
-            }
-            else
-            {
-                ret.h = 0;
-            }
-
-            ret.h *= 1f / 360f;
-            ret.s = (dif / max) * 1f;
-            ret.b = max;
-
-            return ret;
-        }
-
-        public static implicit operator Color(HSBColor hsbColor)
-        {
-            float r = hsbColor.b;
-            float g = hsbColor.b;
-            float b = hsbColor.b;
-            if (hsbColor.s != 0)
-            {
-                float max = hsbColor.b;
-                float dif = hsbColor.b * hsbColor.s;
-                float min = hsbColor.b - dif;
-
-                float h = hsbColor.h * 360f;
-
-                if (h < 60f)
-                {
-                    r = max;
-                    g = h * dif / 60f + min;
-                    b = min;
-                }
-                else if (h < 120f)
-                {
-                    r = -(h - 120f) * dif / 60f + min;
-                    g = max;
-                    b = min;
-                }
-                else if (h < 180f)
-                {
-                    r = min;
-                    g = max;
-                    b = (h - 120f) * dif / 60f + min;
-                }
-                else if (h < 240f)
-                {
-                    r = min;
-                    g = -(h - 240f) * dif / 60f + min;
-                    b = max;
-                }
-                else if (h < 300f)
-                {
-                    r = (h - 240f) * dif / 60f + min;
-                    g = min;
-                    b = max;
-                }
-                else if (h <= 360f)
-                {
-                    r = max;
-                    g = min;
-                    b = -(h - 360f) * dif / 60 + min;
-                }
-                else
-                {
-                    r = 0;
-                    g = 0;
-                    b = 0;
-                }
-            }
-
-            return new Color(Mathf.Clamp01(r), Mathf.Clamp01(g), Mathf.Clamp01(b), hsbColor.a);
-        }
-
-        public override string ToString()
-        {
-            return "H:" + h + " S:" + s + " B:" + b;
-        }
-
-        public static HSBColor Lerp(HSBColor a, HSBColor b, float t)
-        {
-            float h, s;
-
-            //check special case black (color.b==0): interpolate neither hue nor saturation!
-            //check special case grey (color.s==0): don't interpolate hue!
-            if (a.b == 0)
-            {
-                h = b.h;
-                s = b.s;
-            }
-            else if (b.b == 0)
-            {
-                h = a.h;
-                s = a.s;
-            }
-            else
-            {
-                if (a.s == 0)
-                {
-                    h = b.h;
-                }
-                else if (b.s == 0)
-                {
-                    h = a.h;
-                }
-                else
-                {
-                    // works around bug with LerpAngle
-                    float angle = Mathf.LerpAngle(a.h * 360f, b.h * 360f, t);
-                    while (angle < 0f)
-                        angle += 360f;
-                    while (angle > 360f)
-                        angle -= 360f;
-                    h = angle / 360f;
-                }
-                s = Mathf.Lerp(a.s, b.s, t);
-            }
-            return new HSBColor(h, s, Mathf.Lerp(a.b, b.b, t), Mathf.Lerp(a.a, b.a, t));
         }
     }
 
@@ -357,7 +175,7 @@ namespace uSource
             array[array.Length - 1] = item;
         }
 
-        public static bool ArrayEquals<T>(T[] lhs, T[] rhs)
+        public static Boolean ArrayEquals<T>(T[] lhs, T[] rhs)
         {
             if (lhs == null || rhs == null)
                 return lhs == rhs;
@@ -365,7 +183,7 @@ namespace uSource
             if (lhs.Length != rhs.Length)
                 return false;
 
-            for (int i = 0; i < lhs.Length; i++)
+            for (Int32 i = 0; i < lhs.Length; i++)
             {
                 if (!lhs[i].Equals(rhs[i]))
                     return false;
@@ -374,7 +192,7 @@ namespace uSource
             return true;
         }
 
-        public static bool ArrayReferenceEquals<T>(T[] lhs, T[] rhs)
+        public static Boolean ArrayReferenceEquals<T>(T[] lhs, T[] rhs)
         {
             if (lhs == null || rhs == null)
                 return lhs == rhs;
@@ -382,7 +200,7 @@ namespace uSource
             if (lhs.Length != rhs.Length)
                 return false;
 
-            for (int i = 0; i < lhs.Length; i++)
+            for (Int32 i = 0; i < lhs.Length; i++)
             {
                 if (!object.ReferenceEquals(lhs[i], rhs[i]))
                     return false;
@@ -393,13 +211,13 @@ namespace uSource
 
         public static void AddRange<T>(ref T[] array, T[] items)
         {
-            int size = array.Length;
+            Int32 size = array.Length;
             System.Array.Resize(ref array, array.Length + items.Length);
-            for (int i = 0; i < items.Length; i++)
+            for (Int32 i = 0; i < items.Length; i++)
                 array[size + i] = items[i];
         }
 
-        public static void Insert<T>(ref T[] array, int index, T item)
+        public static void Insert<T>(ref T[] array, Int32 index, T item)
         {
             ArrayList a = new ArrayList();
             a.AddRange(array);
@@ -426,32 +244,32 @@ namespace uSource
             return list.Find(match);
         }
 
-        public static int FindIndex<T>(T[] array, Predicate<T> match)
+        public static Int32 FindIndex<T>(T[] array, Predicate<T> match)
         {
             List<T> list = new List<T>(array);
             return list.FindIndex(match);
         }
 
-        public static int IndexOf<T>(T[] array, T value)
+        public static Int32 IndexOf<T>(T[] array, T value)
         {
             List<T> list = new List<T>(array);
             return list.IndexOf(value);
         }
 
-        public static int LastIndexOf<T>(T[] array, T value)
+        public static Int32 LastIndexOf<T>(T[] array, T value)
         {
             List<T> list = new List<T>(array);
             return list.LastIndexOf(value);
         }
 
-        public static void RemoveAt<T>(ref T[] array, int index)
+        public static void RemoveAt<T>(ref T[] array, Int32 index)
         {
             List<T> list = new List<T>(array);
             list.RemoveAt(index);
             array = list.ToArray();
         }
 
-        public static bool Contains<T>(T[] array, T item)
+        public static Boolean Contains<T>(T[] array, T item)
         {
             List<T> list = new List<T>(array);
             return list.Contains(item);
@@ -464,7 +282,7 @@ namespace uSource
         }
 
         //me
-        public static int Push<T>(this T[] source, T value)
+        public static Int32 Push<T>(this T[] source, T value)
         {
             var index = Array.IndexOf(source, default(T));
 
@@ -476,11 +294,11 @@ namespace uSource
             return index;
         }
 
-        public static T ReadAtPosition<T>(this byte[] buffer, int position)
+        public static T ReadAtPosition<T>(this Byte[] buffer, Int32 position)
             where T : struct
         {
-            int size = Marshal.SizeOf(typeof(T));
-            var bytes = new byte[size];
+            Int32 size = Marshal.SizeOf(typeof(T));
+            var bytes = new Byte[size];
 
             Array.Copy(buffer, position, bytes, 0, size);
             T stuff;
@@ -502,16 +320,16 @@ namespace uSource
         public static void ReverseNormals(this Mesh mesh)
         {
             Vector3[] normals = mesh.normals;
-            for (int i = 0; i < normals.Length; i++)
+            for (Int32 i = 0; i < normals.Length; i++)
                 normals[i] = -normals[i];
             mesh.normals = normals;
 
-            for (int m = 0; m < mesh.subMeshCount; m++)
+            for (Int32 m = 0; m < mesh.subMeshCount; m++)
             {
-                int[] triangles = mesh.GetTriangles(m);
-                for (int i = 0; i < triangles.Length; i += 3)
+                Int32[] triangles = mesh.GetTriangles(m);
+                for (Int32 i = 0; i < triangles.Length; i += 3)
                 {
-                    int temp = triangles[i + 0];
+                    Int32 temp = triangles[i + 0];
                     triangles[i + 0] = triangles[i + 1];
                     triangles[i + 1] = temp;
                 }
@@ -528,7 +346,7 @@ namespace uSource
 
             Transform[] ObjectBones = new Transform[skinnedMesh.bones.Length];
 
-            for (int i = 0; i < skinnedMesh.bones.Length; i++)
+            for (Int32 i = 0; i < skinnedMesh.bones.Length; i++)
             {
                 ObjectBones[i] = FindChildByName(skinnedMesh.bones[i].name, source);
             }
@@ -540,7 +358,7 @@ namespace uSource
             return TempRenderer.gameObject;
         }
 
-        private static Transform FindChildByName(string Name, Transform GO)
+        private static Transform FindChildByName(String Name, Transform GO)
         {
             Transform ReturnObj;
 
@@ -558,12 +376,12 @@ namespace uSource
             return null;
         }
 
-        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
+        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, Int32 N)
         {
             return source.Skip(Math.Max(0, source.Count() - N));
         }
 
-        public static T[] RemoveAt<T>(this T[] source, int index)
+        public static T[] RemoveAt<T>(this T[] source, Int32 index)
         {
             T[] dest = new T[source.Length - 1];
             if (index > 0)
@@ -577,7 +395,7 @@ namespace uSource
 
         public static Quaternion Normalize(this Quaternion q)
         {
-            float mag = Mathf.Sqrt(Quaternion.Dot(q, q));
+            Single mag = Mathf.Sqrt(Quaternion.Dot(q, q));
 
             if (mag < Mathf.Epsilon)
                 return Quaternion.identity;
@@ -597,7 +415,7 @@ namespace uSource
 
         public static Quaternion GetNormalized(this Quaternion q)
         {
-            float f = 1f / Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+            Single f = 1f / Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
             return new Quaternion(q.x * f, q.y * f, q.z * f, q.w * f);
         }
 
@@ -614,7 +432,7 @@ namespace uSource
             return new Vector3(a.x * d.x, a.y * d.y, a.z * d.z);
         }
 
-        public static string GetTransformPath(this Transform to, Transform from)
+        public static String GetTransformPath(this Transform to, Transform from)
         {
             var target = to;
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -635,12 +453,12 @@ namespace uSource
             return calculateTransformPath;
         }
 
-        public static short[] ReadAnimationFrameValues(this System.IO.BinaryReader br, int count)
+        public static short[] ReadAnimationFrameValues(this System.IO.BinaryReader br, Int32 count)
         {
             /*
              * RLE data:
-             * byte compressed_length - compressed number of values in the data
-             * byte uncompressed_length - uncompressed number of values in run
+             * Byte compressed_length - compressed number of values in the data
+             * Byte uncompressed_length - uncompressed number of values in run
              * short values[compressed_length] - values in the run, the last value is repeated to reach the uncompressed length
              */
             var values = new short[count];
@@ -687,7 +505,7 @@ namespace uSource
                 if (!a.IsDefined(typeof(ObsoleteAttribute), true))
                 {
                     object value = a is FieldInfo ? ((FieldInfo)a).GetValue(o) : a is MemberInfo ? a.GetMemberValue(o) : ((PropertyInfo)a).GetValue(o, null);
-                    Input.AppendLine(string.Format("     {0} = {1}", a.Name, value != null ? value.ToString() : "<NULL>"));
+                    Input.AppendLine(String.Format("     {0} = {1}", a.Name, value != null ? value.ToString() : "<NULL>"));
                 }
             }
 
@@ -699,28 +517,28 @@ namespace uSource
 
     public static class StreamExtension
     {
-        public static void CopyToLimited(this System.IO.Stream inputStream, System.IO.Stream outputStream, long limit, int bufferSize = 81920)
+        public static void CopyToLimited(this System.IO.Stream inputStream, System.IO.Stream outputStream, long limit, Int32 bufferSize = 81920)
         {
             long bytesLeftToRead = limit;
 
             if (bufferSize > limit)
             {
-                bufferSize = (int)limit;
+                bufferSize = (Int32)limit;
             }
 
-            byte[] buffer = new byte[bufferSize];
+            Byte[] buffer = new Byte[bufferSize];
 
             while (bytesLeftToRead > 0)
             {
-                int bytesToRead = bufferSize;
+                Int32 bytesToRead = bufferSize;
 
                 //if we're about to read over the limit, clamp it down to whatever is left
                 if ((bytesLeftToRead - bytesToRead) < 0)
                 {
-                    bytesToRead = (int)bytesLeftToRead;
+                    bytesToRead = (Int32)bytesLeftToRead;
                 }
 
-                int bytesRead = inputStream.Read(buffer, 0, bytesToRead);
+                Int32 bytesRead = inputStream.Read(buffer, 0, bytesToRead);
 
                 //now immediately write to the output stream
 
@@ -733,8 +551,8 @@ namespace uSource
 
         public static void CopyStream(System.IO.Stream input, System.IO.Stream output)
         {
-            byte[] b = new byte[32768];
-            int r;
+            Byte[] b = new Byte[32768];
+            Int32 r;
             while ((r = input.Read(b, 0, b.Length)) > 0)
                 output.Write(b, 0, r);
         }
@@ -743,27 +561,27 @@ namespace uSource
     public static class BinaryExtension
     {
         /// <summary>
-        /// Read a fixed number of bytes from the reader and parse out an optionally null-terminated string
+        /// Read a fixed number of bytes from the reader and parse out an optionally null-terminated String
         /// </summary>
         /// <param name="br">Binary reader</param>
         /// <param name="encoding">The text encoding to use</param>
         /// <param name="length">The number of bytes to read</param>
-        /// <returns>The string that was read</returns>
-        public static string ReadFixedLengthString(this System.IO.BinaryReader br, System.Text.Encoding encoding, int length)
+        /// <returns>The String that was read</returns>
+        public static String ReadFixedLengthString(this System.IO.BinaryReader br, System.Text.Encoding encoding, Int32 length)
         {
             var bstr = br.ReadBytes(length).TakeWhile(b => b != 0).ToArray();
             return encoding.GetString(bstr);
         }
 
         /// <summary>
-        /// Read a variable number of bytes into a string until a null terminator is reached.
+        /// Read a variable number of bytes into a String until a null terminator is reached.
         /// </summary>
         /// <param name="br">Binary reader</param>
-        /// <returns>The string that was read</returns>
-        public static string ReadNullTerminatedString(this System.IO.BinaryReader br)
+        /// <returns>The String that was read</returns>
+        public static String ReadNullTerminatedString(this System.IO.BinaryReader br)
         {
             var str = "";
-            char c;
+            Char c;
             while ((c = br.ReadChar()) != 0)
             {
                 str += c;
@@ -771,16 +589,16 @@ namespace uSource
             return str;
         }
 
-        public static float[] ReadSingleArray(this System.IO.BinaryReader br, int num)
+        public static Single[] ReadSingleArray(this System.IO.BinaryReader br, Int32 num)
         {
-            var arr = new float[num];
+            var arr = new Single[num];
             for (var i = 0; i < num; i++) arr[i] = br.ReadSingle();
             return arr;
         }
 
-        public static int[] ReadIntArray(this System.IO.BinaryReader br, int num)
+        public static Int32[] ReadIntArray(this System.IO.BinaryReader br, Int32 num)
         {
-            var arr = new int[num];
+            var arr = new Int32[num];
             for (var i = 0; i < num; i++) arr[i] = br.ReadInt32();
             return arr;
         }
@@ -791,7 +609,7 @@ namespace uSource
         /// <param name="br">Binary reader</param>
         /// <param name="num">The number of values to read</param>
         /// <returns>The resulting array</returns>
-        public static ushort[] ReadUshortArray(this System.IO.BinaryReader br, int num)
+        public static ushort[] ReadUshortArray(this System.IO.BinaryReader br, Int32 num)
         {
             var arr = new ushort[num];
             for (var i = 0; i < num; i++) arr[i] = br.ReadUInt16();
@@ -804,7 +622,7 @@ namespace uSource
         /// <param name="br">Binary reader</param>
         /// <param name="num">The number of values to read</param>
         /// <returns>The resulting array</returns>
-        public static short[] ReadShortArray(this System.IO.BinaryReader br, int num)
+        public static short[] ReadShortArray(this System.IO.BinaryReader br, Int32 num)
         {
             var arr = new short[num];
             for (var i = 0; i < num; i++) arr[i] = br.ReadInt16();

@@ -193,7 +193,7 @@ namespace uSource.Formats.Source.MDL
                                         Position.x = -Position.x;
 
                                     //Corrects global scale and convert radians to degrees
-                                    Position *= uLoader.WorldScale;
+                                    Position *= uLoader.UnitScale;
                                     Rotation *= Mathf.Rad2Deg;
                                     Quaternion quat;
 
@@ -326,7 +326,7 @@ namespace uSource.Formats.Source.MDL
 
                 Bones[boneID] = BoneObject.transform;//MDL_Bones.Add(BoneObject.transform);
 
-                Vector3 pos = MDL_StudioBones[boneID].pos * uLoader.WorldScale;
+                Vector3 pos = MDL_StudioBones[boneID].pos * uLoader.UnitScale;
                 Vector3 rot = MDL_StudioBones[boneID].rot * Mathf.Rad2Deg;
 
                 //Invert x for convert right-handed to left-handed
@@ -376,8 +376,8 @@ namespace uSource.Formats.Source.MDL
                         mstudiobbox_t hitbox = Hitboxes[hitboxsetID][hitboxID].BBox;
                         BoxCollider bbox = new GameObject(String.Format("Hitbox_{0}", Bones[hitbox.bone].name)).AddComponent<BoxCollider>();
 
-                        bbox.size = MathLibrary.NegateX(hitbox.bbmax - hitbox.bbmin) * uLoader.WorldScale;
-                        bbox.center = (MathLibrary.NegateX(hitbox.bbmax + hitbox.bbmin) / 2) * uLoader.WorldScale;
+                        bbox.size = MathLibrary.NegateX(hitbox.bbmax - hitbox.bbmin) * uLoader.UnitScale;
+                        bbox.center = (MathLibrary.NegateX(hitbox.bbmax + hitbox.bbmin) / 2) * uLoader.UnitScale;
 
                         bbox.transform.parent = Bones[hitbox.bone];
                         bbox.transform.localPosition = Vector3.zero;
@@ -413,7 +413,7 @@ namespace uSource.Formats.Source.MDL
 
                             for (Int32 i = 0; i < Vertexes.Length; i++)
                             {
-                                pVertices[i] = MathLibrary.SwapZY(Vertexes[i].m_vecPosition * uLoader.WorldScale);
+                                pVertices[i] = MathLibrary.SwapZY(Vertexes[i].m_vecPosition * uLoader.UnitScale);
                                 pNormals[i] = MathLibrary.SwapZY(Vertexes[i].m_vecNormal);
                                 pUvBuffer[i] = Vertexes[i].m_vecTexCoord;
                                 pBoneWeight[i] = GetBoneWeight(Vertexes[i].m_BoneWeights);

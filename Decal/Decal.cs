@@ -47,7 +47,7 @@ namespace uSource.Decals
 
         public void SetDirection()
         {
-            float dist = (16 * uLoader.WorldScale) + 0.01f;
+            float dist = (16 * uLoader.UnitScale) + 0.01f;
             List<Vector3> hits = new List<Vector3>();
 
             if (Physics.Raycast(transform.position - new Vector3(0, 0, 0.01f), Vector3.forward, dist))

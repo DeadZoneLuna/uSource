@@ -26,7 +26,7 @@ namespace uSource.Example
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = true;
-            use3dSky = uLoader.use3DSkybox;
+            use3dSky = uLoader.Use3DSkybox;
         }
 
         void Update()

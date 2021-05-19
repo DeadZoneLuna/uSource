@@ -44,12 +44,13 @@ namespace uSource
         }
     }
 
+    //TODO: Rework all this to serializable object?
     [CustomEditor(typeof(uLoader))]
     public class uLoaderEditor : Editor
     {
         public override void OnInspectorGUI()
         {
-            base.OnInspectorGUI();
+            //base.OnInspectorGUI();
             DrawGUI();
         }
 
@@ -57,16 +58,15 @@ namespace uSource
         {
             GUILayout.BeginVertical("box");
             GUILayout.Label("Global Settings", EditorStyles.boldLabel);
-            uLoader.ModFolders[0] = EditorGUILayout.TextField("Mod Name:", uLoader.ModFolders[0]);
             uLoader.RootPath = EditorGUILayout.TextField("Root path:", uLoader.RootPath);
-            uLoader.WorldScale = EditorGUILayout.FloatField("Unit scale:", uLoader.WorldScale);
-            uLoader.saveAssetsToUnity = EditorGUILayout.Toggle("Save loaded assets to Unity", uLoader.saveAssetsToUnity);
+            uLoader.ModFolders[0] = EditorGUILayout.TextField("Mod Name:", uLoader.ModFolders[0]);
+            uLoader.UnitScale = EditorGUILayout.FloatField("Unit scale:", uLoader.UnitScale);
+            uLoader.SaveAssetsToUnity = EditorGUILayout.Toggle("Save loaded assets to Unity", uLoader.SaveAssetsToUnity);
             uLoader.LoadAnims = EditorGUILayout.Toggle("Load animations (Beta)", uLoader.LoadAnims);
-            uLoader.clearDirectoryCache = EditorGUILayout.Toggle("Clear directory cache", uLoader.clearDirectoryCache);
-            uLoader.clearModelCache = EditorGUILayout.Toggle("Clear model cache", uLoader.clearModelCache);
-            uLoader.clearMaterialCache = EditorGUILayout.Toggle("Clear material cache", uLoader.clearMaterialCache);
-            uLoader.clearTextureCache = EditorGUILayout.Toggle("Clear texture cache", uLoader.clearTextureCache);
-            //EditorGUILayout.ObjectField(ConfigLoader.DefaultMaterial, typeof(Material));
+            uLoader.ClearDirectoryCache = EditorGUILayout.Toggle("Clear directory cache", uLoader.ClearDirectoryCache);
+            uLoader.ClearModelCache = EditorGUILayout.Toggle("Clear model cache", uLoader.ClearModelCache);
+            uLoader.ClearMaterialCache = EditorGUILayout.Toggle("Clear material cache", uLoader.ClearMaterialCache);
+            uLoader.ClearTextureCache = EditorGUILayout.Toggle("Clear texture cache", uLoader.ClearTextureCache);
             GUILayout.EndVertical();
 
             GUILayout.Space(10);
@@ -75,13 +75,21 @@ namespace uSource
             GUILayout.BeginVertical("box");
             GUILayout.Label("BSP Import Settings", EditorStyles.boldLabel);
 
-            uLoader.use3DSkybox = EditorGUILayout.Toggle("Use 3D Skybox", uLoader.use3DSkybox);
-            uLoader.useInfoDecals = EditorGUILayout.Toggle("Load infodecals (Beta)", uLoader.useInfoDecals);
-            uLoader.useLightmapsAsTextureShader = EditorGUILayout.Toggle("Use shader for lightmaps", uLoader.useLightmapsAsTextureShader);
-            uLoader.ignoreShadowControl = EditorGUILayout.Toggle("Ignore shadow control", uLoader.ignoreShadowControl);
-            uLoader.useDynamicLight = EditorGUILayout.Toggle("Dynamic shadows", uLoader.useDynamicLight);
-            uLoader.useGammaLighting = EditorGUILayout.Toggle("Use gamma color space", uLoader.useGammaLighting);
-            uLoader.isDebug = EditorGUILayout.Toggle("Debug entities", uLoader.isDebug);
+            uLoader.ParseBSPPhysics = EditorGUILayout.Toggle("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
+            uLoader.Use3DSkybox = EditorGUILayout.Toggle("Use 3D Skybox", uLoader.Use3DSkybox);
+            uLoader.ParseDecals = EditorGUILayout.Toggle("Parse decals (Beta)", uLoader.ParseDecals);
+            uLoader.ParseLightmaps = EditorGUILayout.Toggle("Parse Lightmaps to Unity", uLoader.ParseLightmaps);
+            uLoader.UseGammaLighting = EditorGUILayout.Toggle("Use gamma color space", uLoader.UseGammaLighting);
+            uLoader.UseLightmapsAsTextureShader = EditorGUILayout.Toggle("Use shader for lightmaps", uLoader.UseLightmapsAsTextureShader);
+
+            uLoader.ParseLights = EditorGUILayout.Toggle("Parse lights (Beta)", uLoader.ParseLights);
+            if (uLoader.ParseLights)
+            {
+                uLoader.IgnoreShadowControl = EditorGUILayout.Toggle("Ignore shadow control", uLoader.IgnoreShadowControl);
+                uLoader.UseDynamicLight = EditorGUILayout.Toggle("Dynamic shadows", uLoader.UseDynamicLight);
+            }
+
+            uLoader.DebugEntities = EditorGUILayout.Toggle("Debug entities", uLoader.DebugEntities);
             uLoader.MapName = EditorGUILayout.TextField("Map Name:", uLoader.MapName);
             if (GUILayout.Button("Load BSP"))
             {
@@ -106,15 +114,15 @@ namespace uSource
             GUILayout.BeginVertical("box");
             GUILayout.Label("MDL Import Settings", EditorStyles.boldLabel);
 
-            uLoader.useStaticPropFlag = EditorGUILayout.Toggle("Load static bones", uLoader.useStaticPropFlag);
-            uLoader.useHitboxesOnModel = EditorGUILayout.Toggle("Load hitboxes model", uLoader.useHitboxesOnModel);
+            uLoader.UseStaticPropFlag = EditorGUILayout.Toggle("Load static bones", uLoader.UseStaticPropFlag);
+            uLoader.UseHitboxesOnModel = EditorGUILayout.Toggle("Load hitboxes model", uLoader.UseHitboxesOnModel);
             uLoader.DrawArmature = EditorGUILayout.Toggle("Debug skeleton / bones", uLoader.DrawArmature);
             uLoader.ModelPath = EditorGUILayout.TextField("Model:", uLoader.ModelPath);
             if (GUILayout.Button("Load StudioModel"))
             {
                 uLoader.Clear();
                 uResourceManager.Init();
-                uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.useHitboxesOnModel);
+                uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
                 uResourceManager.CloseStreams();
             }
 
@@ -123,8 +131,8 @@ namespace uSource
             {
                 uLoader.Clear();
                 uResourceManager.Init();
-                var mainMDL = uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.useHitboxesOnModel);
-                var subMDL = uResourceManager.LoadModel(uLoader.SubModelPath, uLoader.LoadAnims, uLoader.useHitboxesOnModel);
+                var mainMDL = uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                var subMDL = uResourceManager.LoadModel(uLoader.SubModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
                 uResourceManager.CloseStreams();
 
                 foreach (SkinnedMeshRenderer SkinnedMesh in subMDL.GetComponentsInChildren<SkinnedMeshRenderer>())
@@ -136,9 +144,9 @@ namespace uSource
             {
                 uLoader.Clear();
                 uResourceManager.Init();
-                for (int i = 0; i < uLoader.Models.Length; i++)
+                for (int i = 0; i < uLoader.ModelsTest.Length; i++)
                 {
-                    uResourceManager.LoadModel(uLoader.Models[i], uLoader.LoadAnims, uLoader.useHitboxesOnModel);
+                    uResourceManager.LoadModel(uLoader.ModelsTest[i], uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
                 }
                 uResourceManager.CloseStreams();
             }
@@ -152,7 +160,7 @@ namespace uSource
             GUILayout.BeginHorizontal("textfield");
 
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Version: 1.0 (Beta)\n\nSpecial thanks:\n\n->REDxEYE and ShadelessFox\n->ZeqMacaw (for Crowbar)\n->James King aka Metapyziks (for SourceUtils)\n->LogicAndTrick (for Sledge and Sledge-Formats)", EditorStyles.largeLabel);
+            GUILayout.Label("Version: 1.1 (Beta)\n\nSpecial thanks:\n\n->REDxEYE and ShadelessFox\n->ZeqMacaw (for Crowbar)\n->James King aka Metapyziks (for SourceUtils)\n->LogicAndTrick (for Sledge and Sledge-Formats)", EditorStyles.largeLabel);
             GUILayout.FlexibleSpace();
 
             //GUILayout.EndHorizontal();
@@ -202,21 +210,67 @@ namespace uSource
 
     public class uLoader : MonoBehaviour
     {
+        #region Global Settings
         //Global settings
-        public static Boolean saveAssetsToUnity = false; // - TODO
-        public static Boolean clearDirectoryCache = false;
-        public static Boolean clearModelCache = true;
-        public static Boolean clearMaterialCache = true;
-        public static Boolean clearTextureCache = true;
         public static String RootPath = @"F:\Games\Source Engine\Counter-Strike Source";
-        public static readonly String[] ModFolders = { "cstrike", "hl2" };
+        public static String[] ModFolders = { "cstrike", "hl2" };
         //"hl2_misc_dir", "hl2_textures_dir"
-        public static readonly String[][] DirPaks = new String[][] 
-        { 
-            new String[] { "cstrike_pak_dir" }, 
-            new String[] { "hl2_misc_dir", "hl2_textures_dir" } 
+        //"bms_maps_dir", "bms_textures_dir", "bms_materials_dir", "bms_models_dir", "bms_misc_dir"
+        //"hl2_misc_dir", "hl2_textures_dir", "hl2_materials_dir", "hl2_models_dir"
+        public static readonly String[][] DirPaks = new String[][]
+        {
+            new String[] { "cstrike_pak_dir" },
+            new String[] { "hl2_misc_dir", "hl2_textures_dir" }
         };
-        public static readonly String[] Models = 
+
+        public static Single UnitScale = 0.0254f;
+        public static Boolean SaveAssetsToUnity = false; // - TODO
+        public static Boolean LoadAnims = false;
+        public static Boolean ClearDirectoryCache = false;
+        public static Boolean ClearModelCache = true;
+        public static Boolean ClearMaterialCache = true;
+        public static Boolean ClearTextureCache = true;
+        //Global settings
+        #endregion
+
+        #region BSP
+        //BSP
+        public static String MapName = "test_lights";
+        public static Boolean ParseBSPPhysics = false;
+        public static Boolean Use3DSkybox = false;
+        public static Boolean ParseDecals = false;
+        public static Boolean ParseLightmaps = true;
+        public static Boolean UseGammaLighting = true;
+        public static Boolean UseLightmapsAsTextureShader = false;
+        public static Boolean ParseLights = true;
+        public static Boolean IgnoreShadowControl = false;
+        public static Boolean UseDynamicLight = true;
+        public static Boolean DebugEntities = true;
+        //BSP
+
+        public static List<LightmapData> lightmapsData; //Base LightmapData
+        public static int CurrentLightmap = 0; //Lightmap Index Count
+        #endregion
+
+        #region MDL
+        //MDL
+        //weapons/v_rif_ak47
+        //deadzone/characters/counter-strike source/t_leet_face
+        //player/custom_player/legacy/tm_leet_varianta
+        //props_vehicles/mining_car
+        //player/ak_anims_t
+        //weapons/v_357
+        //weapons/v_pist_p228
+        //models/weapons/v_models/v_smg_sniper
+        //props_c17/door01_left
+        //survivors/survivor_gambler
+        public static String ModelPath = @"weapons/v_rif_ak47";
+        public static String SubModelPath = @"weapons/ct_arms";
+        public static Boolean UseStaticPropFlag = false;
+        public static Boolean UseHitboxesOnModel = false;
+        public static Boolean DrawArmature = false;
+
+        public static readonly String[] ModelsTest =
         {
             "models/weapons/v_c4",
             "models/weapons/v_knife_t",
@@ -248,45 +302,8 @@ namespace uSource
             "models/weapons/v_snip_sg550",
             "models/weapons/v_mach_m249para"
         };
-        //public static Material DefaultMaterial = new Material("Diffuse"));
-        //Global settings
-
-        //BSP
-        public static String MapName = "de_dust2";
-        public static Boolean useLightmapsAsTextureShader = false;
-        public static Boolean ignoreShadowControl = false;
-        public static Boolean use3DSkybox = false;
-        public static Boolean useInfoDecals = false;
-        public static Boolean useDynamicLight = true;
-        public static Boolean useGammaLighting = true;
-        //BSP
-
         //MDL
-        //weapons/v_rif_ak47
-        //deadzone/characters/counter-strike source/t_leet_face
-        //player/custom_player/legacy/tm_leet_varianta
-        //props_vehicles/mining_car
-        //player/ak_anims_t
-        //weapons/v_357
-        //weapons/v_pist_p228
-        //models/weapons/v_models/v_smg_sniper
-        //props_c17/door01_left
-        //survivors/survivor_gambler
-        public static String ModelPath = @"weapons/v_rif_ak47";
-        public static String SubModelPath = @"weapons/ct_arms";
-        public static Boolean LoadAnims = false;
-        public static Boolean useHitboxesOnModel = false;
-        public static Boolean useStaticPropFlag = false;
-        //MDL
-
-        //Debug
-        public static Boolean DrawArmature = false;
-        public static bool isDebug = false;
-        //Debug
-
-        public static float WorldScale = 0.0254f;
-        public static List<LightmapData> lightmapsData; //Base LightmapData
-        public static int CurrentLightmap = 0; //Lightmap Index Count
+        #endregion
 
         public static void Clear()
         {
@@ -302,19 +319,19 @@ namespace uSource
 
             RenderSettings.skybox = null;
 
-            if (uResourceManager.DirectoryCache != null && clearDirectoryCache)
+            if (uResourceManager.DirectoryCache != null && ClearDirectoryCache)
                 uResourceManager.DirectoryCache.Clear();
 
-            if (uResourceManager.ModelCache != null && clearModelCache)
+            if (uResourceManager.ModelCache != null && ClearModelCache)
                 uResourceManager.ModelCache.Clear();
 
-            if (uResourceManager.MaterialCache != null && clearMaterialCache)
+            if (uResourceManager.MaterialCache != null && ClearMaterialCache)
                 uResourceManager.MaterialCache.Clear();
 
-            if (uResourceManager.TextureCache != null && clearTextureCache)
+            if (uResourceManager.TextureCache != null && ClearTextureCache)
                 uResourceManager.TextureCache.Clear();
 
-            if (!useLightmapsAsTextureShader)
+            if (!UseLightmapsAsTextureShader)
             {
                 if (lightmapsData != null)
                     lightmapsData.Clear();

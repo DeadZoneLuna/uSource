@@ -37,20 +37,20 @@ namespace uSource.Formats.Source.VBSP
         static Face[] BSP_CFaces, BSP_CDisp;
         public static List<GameObject> BSP_Brushes;
 
+        // ======== ENTITIES ======= //
+
+        public static Transform LightEnvironment;
         public static Transform ShadowControl;
         public static GameObject BSP_WorldSpawn;
         public static Flare GlowFlare;
+
+        // ======== DEBUG ======= //
 
         static System.Diagnostics.Stopwatch stopwatch;
 
         //TODO: Check if LUMPs has a LZMA compression (ex: updated tf maps)
         public static void Load(Stream stream, string BSPName)
         {
-            //bspPath = uLoader.RootPath + "/" + uLoader.ModFolders[0] + "/maps/" + BSPName + ".bsp";
-            //if (!File.Exists(bspPath))
-            //    throw new FileNotFoundException(String.Format("Map file ({0}) wasn't found in the ({1}) mod-folder. Check weather a path is valid.", BSPName, uLoader.ModFolders[0]));
-
-            //bspPath = BSPName;
             BSPFileReader = new uReader(stream);
             BSPFileReader.ReadType(ref BSP_Header);
 
@@ -109,9 +109,6 @@ namespace uSource.Formats.Source.VBSP
             Int32[] BSP_TextureStringTable = new Int32[BSP_Header.Lumps[44].FileLen / 4];
             BSPFileReader.ReadArray(ref BSP_TextureStringTable, BSP_Header.Lumps[44].FileOfs);
 
-            if (uLoader.ModFolders[0] == "tf")
-                return;
-
             for (Int32 i = 0; i < BSP_TextureStringTable.Length; i++)
                 BSP_TextureStringData[i] = BSPFileReader.ReadNullTerminatedString(BSP_Header.Lumps[43].FileOfs + BSP_TextureStringTable[i]);
 
@@ -122,7 +119,7 @@ namespace uSource.Formats.Source.VBSP
             BSP_Vertices = new Vector3[BSP_Header.Lumps[3].FileLen / 12];
 
             for (Int32 i = 0; i < BSP_Vertices.Length; i++)
-                BSP_Vertices[i] = BSPFileReader.ReadVector3D(true) * uLoader.WorldScale;
+                BSP_Vertices[i] = BSPFileReader.ReadVector3D(true) * uLoader.UnitScale;
 
             BSP_Surfedges = new Int32[BSP_Header.Lumps[13].FileLen / 4];
             BSPFileReader.ReadArray(ref BSP_Surfedges, BSP_Header.Lumps[13].FileOfs);
@@ -139,13 +136,19 @@ namespace uSource.Formats.Source.VBSP
             //Debug import
 
             LoadEntities();
-            LoadStaticProps();
 
-            //Debug import
-            stopwatch.Stop();
-            Debug.Log("Total Time " + stopwatch.Elapsed);
-            //Debug import
-            UnloadAll();
+            try
+            {
+                LoadStaticProps();
+            }
+            finally
+            {
+                //Debug import
+                stopwatch.Stop();
+                Debug.Log("Total Time " + stopwatch.Elapsed);
+                //Debug import
+                UnloadAll();
+            }
         }
 
         static void UnloadAll()
@@ -167,8 +170,6 @@ namespace uSource.Formats.Source.VBSP
             BSP_Brushes.Clear();
             BSPFileReader.BaseStream.Dispose();
             BSPFileReader.BaseStream.Close();
-            //IPAK.Close();
-            //IPAK = null;
             GC.Collect();
             //BSP_WorldSpawn = null;
         }
@@ -203,7 +204,8 @@ namespace uSource.Formats.Source.VBSP
                     CreateDispFaces();
                     CreateDisplacements();
 
-                    //GeneratePhysModels();
+                    if(uLoader.ParseBSPPhysics)
+                        GeneratePhysModels();
 
                     continue;
                 }
@@ -221,7 +223,7 @@ namespace uSource.Formats.Source.VBSP
 
                 if (EntityObject != null)
                 {
-                    if (uLoader.isDebug)
+                    if (uLoader.DebugEntities)
                         EntityObject.gameObject.AddComponent<EntInfo>().Configure(Data);
                     else
                         EntityObject.Configure(Data);
@@ -264,8 +266,8 @@ namespace uSource.Formats.Source.VBSP
 
                 for (Int32 i = 0; i < FaceVertices.Length; i++)
                 {
-                    Single TextureUVS = (Vector3.Dot(FaceVertices[i], tS) + CTexinfo.TextureVecs[0].w * uLoader.WorldScale) / (CTexdata.View_Width * uLoader.WorldScale);
-                    Single TextureUVT = (Vector3.Dot(FaceVertices[i], tT) + CTexinfo.TextureVecs[1].w * uLoader.WorldScale) / (CTexdata.View_Height * uLoader.WorldScale);
+                    Single TextureUVS = (Vector3.Dot(FaceVertices[i], tS) + CTexinfo.TextureVecs[0].w * uLoader.UnitScale) / (CTexdata.View_Width * uLoader.UnitScale);
+                    Single TextureUVT = (Vector3.Dot(FaceVertices[i], tT) + CTexinfo.TextureVecs[1].w * uLoader.UnitScale) / (CTexdata.View_Height * uLoader.UnitScale);
                     TextureUV[i] = new Vector2(TextureUVS, TextureUVT);
                 }
 
@@ -274,8 +276,8 @@ namespace uSource.Formats.Source.VBSP
 
                 for (Int32 i = 0; i < FaceVertices.Length; i++)
                 {
-                    Single LightmapS = (Vector3.Dot(FaceVertices[i], lS) + (CTexinfo.LightmapVecs[0].w + 0.5f - CFace.LightmapTextureMinsInLuxels[0]) * uLoader.WorldScale) / ((CFace.LightmapTextureSizeInLuxels[0] + 1) * uLoader.WorldScale);
-                    Single LightmapT = (Vector3.Dot(FaceVertices[i], lT) + (CTexinfo.LightmapVecs[1].w + 0.5f - CFace.LightmapTextureMinsInLuxels[1]) * uLoader.WorldScale) / ((CFace.LightmapTextureSizeInLuxels[1] + 1) * uLoader.WorldScale);
+                    Single LightmapS = (Vector3.Dot(FaceVertices[i], lS) + (CTexinfo.LightmapVecs[0].w + 0.5f - CFace.LightmapTextureMinsInLuxels[0]) * uLoader.UnitScale) / ((CFace.LightmapTextureSizeInLuxels[0] + 1) * uLoader.UnitScale);
+                    Single LightmapT = (Vector3.Dot(FaceVertices[i], lT) + (CTexinfo.LightmapVecs[1].w + 0.5f - CFace.LightmapTextureMinsInLuxels[1]) * uLoader.UnitScale) / ((CFace.LightmapTextureSizeInLuxels[1] + 1) * uLoader.UnitScale);
                     LightmapUV[i] = new Vector2(LightmapS, LightmapT);
                 }
 
@@ -389,14 +391,15 @@ namespace uSource.Formats.Source.VBSP
                     }
                     else
                     {
-                        MeshObject.AddComponent<MeshCollider>();
+                        if(!uLoader.ParseBSPPhysics)
+                            MeshObject.AddComponent<MeshCollider>();
 
                         List<Vector2> UV2 = new List<Vector2>();
                         Texture2D Lightmap_tex = new Texture2D(1, 1);
 
                         CreateLightmap(Faces, ref Lightmap_tex, ref UV2);
 
-                        if (uLoader.useLightmapsAsTextureShader)
+                        if (uLoader.ParseLightmaps && uLoader.UseLightmapsAsTextureShader)
                             if (MeshRenderer.sharedMaterial != null)
                                 MeshRenderer.sharedMaterial.SetTexture("_LightMap", Lightmap_tex);
 
@@ -484,7 +487,7 @@ namespace uSource.Formats.Source.VBSP
 
                 CreateLightmap(Faces, ref Lightmap_tex, ref UV2);
 
-                if (uLoader.useLightmapsAsTextureShader)
+                if (uLoader.ParseLightmaps && uLoader.UseLightmapsAsTextureShader)
                     if (MeshRenderer.sharedMaterial != null)
                         MeshRenderer.sharedMaterial.SetTexture("_LightMap", Lightmap_tex);
 
@@ -656,7 +659,7 @@ namespace uSource.Formats.Source.VBSP
 
                 for (Int32 i = 0; i < 4; i++)
                 {
-                    Single Distance = Vector3.Distance(FaceVertices[i], BSP_DispInfo[Index].StartPosition * uLoader.WorldScale);
+                    Single Distance = Vector3.Distance(FaceVertices[i], BSP_DispInfo[Index].StartPosition * uLoader.UnitScale);
 
                     if (Distance < MinDist)
                     {
@@ -704,11 +707,11 @@ namespace uSource.Formats.Source.VBSP
                         dDispVert DispVertInfo = BSP_DispVerts[DispVertIndex];
 
                         Vector3 FlatVertex = LeftEnd + (LeftRightStep * j);
-                        Vector3 DispVertex = DispVertInfo.Vec * (DispVertInfo.Dist * uLoader.WorldScale);
+                        Vector3 DispVertex = DispVertInfo.Vec * (DispVertInfo.Dist * uLoader.UnitScale);
                         DispVertex += FlatVertex;
 
-                        Single s = (Vector3.Dot(FlatVertex, tS) + MapFace.TexInfo.TextureVecs[0].w * uLoader.WorldScale) / (MapFace.TexData.View_Width * uLoader.WorldScale);
-                        Single t = (Vector3.Dot(FlatVertex, tT) + MapFace.TexInfo.TextureVecs[1].w * uLoader.WorldScale) / (MapFace.TexData.View_Height * uLoader.WorldScale);
+                        Single s = (Vector3.Dot(FlatVertex, tS) + MapFace.TexInfo.TextureVecs[0].w * uLoader.UnitScale) / (MapFace.TexData.View_Width * uLoader.UnitScale);
+                        Single t = (Vector3.Dot(FlatVertex, tT) + MapFace.TexInfo.TextureVecs[1].w * uLoader.UnitScale) / (MapFace.TexData.View_Height * uLoader.UnitScale);
                         TextureCoordinates.Add(new Vector2(s, t));
 
                         Single l_s = (LightDeltaU * j * MapFace.LightMapW + 0.5f) / (MapFace.LightMapW + 1);
@@ -784,7 +787,7 @@ namespace uSource.Formats.Source.VBSP
 
                 for (Int32 j = 0; j < TexPixels.Length; j++)
                 {
-                    ColorRGBExp32 ColorRGBExp32 = uLoader.useGammaLighting ? TexLightToGamma(InpFaces[i].LightOfs + (j * 4)) : TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
+                    ColorRGBExp32 ColorRGBExp32 = uLoader.UseGammaLighting ? TexLightToGamma(InpFaces[i].LightOfs + (j * 4)) : TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
                     TexPixels[j] = new Color32(ColorRGBExp32.r, ColorRGBExp32.g, ColorRGBExp32.b, 255);
                 }
 
@@ -801,7 +804,7 @@ namespace uSource.Formats.Source.VBSP
             }
 
             //Add lightmap in array
-            if (!uLoader.useLightmapsAsTextureShader)
+            if (uLoader.ParseLightmaps && !uLoader.UseLightmapsAsTextureShader)
             {
                 uLoader.lightmapsData.Add(new LightmapData() { lightmapColor = Lightmap_tex });
                 LightmapSettings.lightmaps = uLoader.lightmapsData.ToArray();
@@ -974,7 +977,7 @@ namespace uSource.Formats.Source.VBSP
                                 BSPFileReader.ReadType(ref StaticPropLumpV11_t);
 
                                 StaticPropName = ModelEntries[StaticPropLumpV11_t.m_PropType];
-                                m_Origin = MathLibrary.SwapY(StaticPropLumpV11_t.m_Origin) * uLoader.WorldScale;
+                                m_Origin = MathLibrary.SwapY(StaticPropLumpV11_t.m_Origin) * uLoader.UnitScale;
                                 m_Angles = new Vector3(StaticPropLumpV11_t.m_Angles.x, -StaticPropLumpV11_t.m_Angles.y, -StaticPropLumpV11_t.m_Angles.z);
                                 //m_UniformScale = StaticPropLumpV11_t.m_UniformScale;
                                 break;
@@ -984,7 +987,7 @@ namespace uSource.Formats.Source.VBSP
                                 BSPFileReader.ReadType(ref StaticPropLumpV4_t);
 
                                 StaticPropName = ModelEntries[StaticPropLumpV4_t.m_PropType];
-                                m_Origin = MathLibrary.SwapY(StaticPropLumpV4_t.m_Origin) * uLoader.WorldScale;
+                                m_Origin = MathLibrary.SwapY(StaticPropLumpV4_t.m_Origin) * uLoader.UnitScale;
                                 m_Angles = new Vector3(StaticPropLumpV4_t.m_Angles.x, -StaticPropLumpV4_t.m_Angles.y, -StaticPropLumpV4_t.m_Angles.z);
                                 break;
                         }
