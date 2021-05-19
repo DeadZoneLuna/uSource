@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using uSource.Decals;
 using uSource.Formats.Source.VTF;
+using uSource.MathLib;
 using uSource.Example;
 
 namespace uSource.Formats.Source.VBSP
 {
     public static class EntitySetup
     {
-        static Boolean hueta = true;
-
         public static void Configure(this Transform transform, List<String> Data)
         {
             //return;
@@ -20,31 +19,36 @@ namespace uSource.Formats.Source.VBSP
 
             //ResourceManager.LoadModel("editor/axis_helper").SetParent(transform, false);
 
-            if (Data.Contains("origin"))
+            Int32 OriginIndex = Data.FindIndex(n => n == "origin");
+            if (OriginIndex != -1)
             {
                 //Old but gold
-                String[] origin = Data[Data.FindIndex(n => n == "origin") + 1].Split(' ');
+                String[] origin = Data[OriginIndex + 1].Split(' ');
 
                 while (origin.Length != 3)
                 {
-                    Int32 TempIndex = Data.FindIndex(n => n == "origin") + 1;
+                    Int32 TempIndex = OriginIndex + 1;
                     origin = Data[Data.FindIndex(TempIndex, n => n == "origin") + 1].Split(' ');
                 }
                 //Old but gold
 
-                transform.position = new Vector3(-origin[1].ToSingle(), origin[2].ToSingle(), origin[0].ToSingle()) * uLoader.WorldScale;
+                transform.position = new Vector3(-origin[1].ToSingle(), origin[2].ToSingle(), origin[0].ToSingle()) * uLoader.UnitScale;
             }
 
-            if (Data.Contains("angles"))
+            Int32 AnglesIndex = Data.FindIndex(n => n == "angles");
+            if (AnglesIndex != -1)
             {
-                //String[] Array = Data[Data.FindIndex(n => n == "angles") + 1].Split(' ');
-                Vector3 EulerAngles = Converters.ToVector3(Data[Data.FindIndex(n => n == "angles") + 1]);//Vector3.zero;
+                Vector3 EulerAngles = Converters.ToVector3(Data[AnglesIndex + 1]);
 
                 EulerAngles = new Vector3(EulerAngles.x, -EulerAngles.y, -EulerAngles.z);
 
+                if (Classname.StartsWith("light", StringComparison.Ordinal))
+                    EulerAngles.x = -EulerAngles.x;
+
+                Int32 PitchIndex = Data.FindIndex(n => n == "pitch");
                 //Lights
-                if (Data.Contains("pitch"))
-                    EulerAngles.x = -Converters.ToSingle(Data[Data.FindIndex(n => n == "pitch") + 1]);//-Single.Parse(Data[Data.FindIndex(n => n == "pitch") + 1]);
+                if (PitchIndex != -1)
+                    EulerAngles.x = -Converters.ToSingle(Data[PitchIndex + 1]);
 
                 transform.eulerAngles = EulerAngles;
             }
@@ -85,7 +89,7 @@ namespace uSource.Formats.Source.VBSP
             }*/
 
             //3D Skybox
-            if (uLoader.use3DSkybox && Classname.Equals("sky_camera"))
+            if (uLoader.Use3DSkybox && Classname.Equals("sky_camera"))
             {
                 //Setup 3DSkybox
                 Camera playerCamera = new GameObject("CameraPlayer").AddComponent<Camera>();
@@ -116,114 +120,205 @@ namespace uSource.Formats.Source.VBSP
                 RenderSettings.ambientGroundColor = Converters.ToColor(Data[Data.FindIndex(n => n == "color") + 1]);
 
                 //Set light direction by shadow_control
-                if (RenderSettings.sun != null)
+                if (VBSPFile.LightEnvironment != null)
                 {
-                    if ((RenderSettings.sun.transform.rotation == Quaternion.identity) && !uLoader.ignoreShadowControl)
-                        RenderSettings.sun.transform.rotation = transform.rotation;
+                    if ((VBSPFile.LightEnvironment.rotation == Quaternion.identity) && !uLoader.IgnoreShadowControl)
+                        VBSPFile.LightEnvironment.rotation = transform.rotation;
 
                     UpdateEquatorColor();
                 }
             }
 
             //Lights parsing
-            if (Classname.Contains("light") && hueta)
+            if (Classname.Contains("light") && !Classname.StartsWith("point"))
             {
                 Color ambientLight;
                 if (Classname.Equals("light_environment"))
                 {
-                    if (RenderSettings.sun != null)
+                    if (VBSPFile.LightEnvironment != null)
                         return;
 
+                    VBSPFile.LightEnvironment = transform;
+
+                    //TODO: Correct parse ambient color
                     String _ambient = Data[Data.FindIndex(n => n == "_ambient") + 1];
-
                     ambientLight = Converters.ToColor(_ambient);
-
                     RenderSettings.ambientLight = ambientLight;
-                    //RenderSettings.ambientSkyColor = ambientLight;
 
                     //Set light direction by shadow_control
                     if (VBSPFile.ShadowControl != null)
                     {
-                        if(!uLoader.ignoreShadowControl && transform.rotation == Quaternion.identity)
+                        if (!uLoader.IgnoreShadowControl && transform.rotation == Quaternion.identity)
                             transform.rotation = VBSPFile.ShadowControl.rotation;
 
                         UpdateEquatorColor();
                     }
                 }
 
-                Light Light = transform.gameObject.AddComponent<Light>();
-
-                if (Classname.Equals("light_spot"))
-                    Light.type = LightType.Spot;
-                else if (Classname.Equals("light_environment"))
+                if (uLoader.ParseLights)
                 {
-                    RenderSettings.sun = Light;
-                    Light.type = LightType.Directional;
-                }
+                    Light Light = transform.gameObject.AddComponent<Light>();
 
-                Vector4 _lightColor = Converters.ToColorVec(Data[Data.FindIndex(n => n == "_light") + 1]);
-                float lumens = _lightColor.w;
-                float color_max = Mathf.Max(_lightColor[0], _lightColor[1], _lightColor[2], _lightColor[3]);
-                lumens *= color_max / 255;
+                    if (Classname.Equals("light_spot"))
+                        Light.type = LightType.Spot;
+                    else if (Classname.Equals("light_environment"))
+                        Light.type = LightType.Directional;
 
-                if (Light.type == LightType.Directional)
-                {
-                    lumens /= 10;
-                    Light.color = new Color32((byte)_lightColor.x, (byte)_lightColor.y, (byte)_lightColor.z, 255);
-                }
-                else
-                    Light.color = _lightColor / color_max;
+                    Vector4 _lightColor = Converters.ToColorVec(Data[Data.FindIndex(n => n == "_light") + 1]);
+                    Single intensity = _lightColor.w;
+                    Single m_Attenuation0 = 0;
+                    Single m_Attenuation1 = 0;
+                    Single m_Attenuation2 = 0;
 
-                float radius = 9.25f;
+                    Light.color = new Color(_lightColor.x / 255, _lightColor.y / 255, _lightColor.z / 255, 255);
 
-                if(Light.type == LightType.Point)
-                {
-                    Int32 distanceIndex = Data.FindIndex(n => n == "_distance") + 1;
+                    Single LightRadius = 256;
 
-                    if (distanceIndex != -1)
+                    if (Light.type == LightType.Spot || Light.type == LightType.Point)
                     {
-                        float _distance = Converters.ToInt32(Data[distanceIndex]);
+                        if (Light.type == LightType.Spot)
+                        {
+                            //Single inner_cone = Converters.ToSingle(Data[Data.FindIndex(n => n == "_cone2") + 1]);
+                            Single cone = Converters.ToSingle(Data[Data.FindIndex(n => n == "_cone") + 1]) * 2;
+                            //radius -= inner_cone / cone;
+                            Light.spotAngle = Mathf.Clamp(cone, 0, 179);
+                        }
 
-                        if (_distance > 0)
-                            radius = _distance / 16f;
+                        Single _distance = Converters.ToInt32(Data[Data.FindIndex(n => n == "_distance") + 1]);
+
+                        if (_distance != 0)
+                        {
+                            LightRadius = _distance;
+                        }
                         else
-                            radius = 16f;
+                        {
+                            Single _fifty_percent_distance = Converters.ToSingle(Data[Data.FindIndex(n => n == "_fifty_percent_distance") + 1]);
+                            Boolean isFifty = _fifty_percent_distance != 0;
+
+                            if (isFifty)
+                            {
+                                //New light style
+                                Single _zero_percent_distance = Converters.ToSingle(Data[Data.FindIndex(n => n == "_zero_percent_distance") + 1]);
+
+                                if (_zero_percent_distance < _fifty_percent_distance)
+                                {
+                                    // !!warning in lib code???!!!
+                                    Debug.LogWarningFormat("light has _fifty_percent_distance of {0} but no zero_percent_distance", _fifty_percent_distance);
+                                    _zero_percent_distance = 2.0f * _fifty_percent_distance;
+                                }
+
+                                Single a = 0, b = 1, c = 0;
+                                if (!MathLibrary.SolveInverseQuadraticMonotonic(0, 1.0f, _fifty_percent_distance, 2.0f, _zero_percent_distance, 256.0f, ref a, ref b, ref c))
+                                {
+                                    Debug.LogWarningFormat("can't solve quadratic for light {0} {1}", _fifty_percent_distance, _zero_percent_distance);
+                                }
+
+                                Single v50 = c + _fifty_percent_distance * (b + _fifty_percent_distance * a);
+                                Single scale = 2.0f / v50;
+                                a *= scale;
+                                b *= scale;
+                                c *= scale;
+                                m_Attenuation2 = a;
+                                m_Attenuation1 = b;
+                                m_Attenuation0 = c;
+                            }
+                            else
+                            {
+                                //Old light style
+                                Single constant_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_constant_attn") + 1]);
+                                Single linear_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_linear_attn") + 1]);
+                                Single quadratic_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_quadratic_attn") + 1]);
+
+                                // old-style manually typed quadrtiac coefficients
+                                if (quadratic_attn < 0.001)
+                                    quadratic_attn = 0;
+
+                                if (linear_attn < 0.001)
+                                    linear_attn = 0;
+
+                                if (constant_attn < 0.001)
+                                    constant_attn = 0;
+
+                                if ((constant_attn < 0.001) &&
+                                     (linear_attn < 0.001) &&
+                                     (quadratic_attn < 0.001))
+                                    constant_attn = 1;
+
+                                m_Attenuation2 = quadratic_attn;
+                                m_Attenuation1 = linear_attn;
+                                m_Attenuation0 = constant_attn;
+                            }
+
+                            // FALLBACK: older lights use this
+                            if (m_Attenuation2 == 0.0f)
+                            {
+                                if (m_Attenuation1 == 0.0f)
+                                {
+                                    // Infinite, but we're not going to draw it as such
+                                    LightRadius = 2000;
+                                }
+                                else
+                                {
+                                    LightRadius = (intensity / 0.03f - m_Attenuation0) / m_Attenuation1;
+                                }
+                            }
+                            else
+                            {
+                                Single a = m_Attenuation2;
+                                Single b = m_Attenuation1;
+                                Single c = m_Attenuation0 - intensity / 0.03f;
+                                Single discrim = b * b - 4 * a * c;
+                                if (discrim < 0.0f)
+                                    // Infinite, but we're not going to draw it as such
+                                    LightRadius = 2000;
+                                else
+                                {
+                                    LightRadius = (-b + Mathf.Sqrt(discrim)) / (2.0f * a);
+                                    if (LightRadius < 0)
+                                        LightRadius = 0;
+
+                                    //DeadZoneLuna
+                                    //TODO: Find the best way to fix that
+                                    //DeadZoneLuna
+                                    if (isFifty)
+                                    {
+                                        //TODO: WHY?
+                                        LightRadius /= 10;
+                                    }
+                                    else
+                                    {
+                                        //TODO: Not enough intensity?
+                                        LightRadius *= 10;
+                                    }
+                                }
+                            }
+                        }
+
+                        Light.range = (LightRadius * uLoader.UnitScale);
                     }
-                }
 
-                if (Light.type == LightType.Spot)
-                {
-                    //float constant_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_constant_attn") + 1]);
-                    //float linear_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_linear_attn") + 1]);
-                    //float quadratic_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_quadratic_attn") + 1]);
-                    float inner_cone = Converters.ToSingle(Data[Data.FindIndex(n => n == "_cone2") + 1], 60);
-                    float cone = Converters.ToSingle(Data[Data.FindIndex(n => n == "_cone") + 1]) * 2;
-                    radius = (10 - inner_cone / cone);
-                    Light.spotAngle = Mathf.Clamp(cone, 0, 179);
-                }
-
-                Light.range = radius;
-                Light.intensity = (lumens * 0.01905f) / 2;
+                    Light.intensity = (intensity / 255f) * 1.75f;
 
 #if UNITY_EDITOR
-                Light.lightmapBakeType = LightmapBakeType.Baked;//ConfigLoader.useDynamicLight ? LightmapBakeType.Mixed : LightmapBakeType.Baked;
+                    Light.lightmapBakeType = LightmapBakeType.Baked;
 #endif
-                if (uLoader.useDynamicLight)
-                {
-                    Light.shadows = LightShadows.Soft;
-                    if (Light.type == LightType.Directional)
+                    if (uLoader.UseDynamicLight)
                     {
-                        Light.shadowBias = 0.1f;
-                        Light.shadowNormalBias = 0;
+                        Light.shadows = LightShadows.Soft;
+                        if (Light.type == LightType.Directional)
+                        {
+                            Light.shadowBias = 0.1f;
+                            Light.shadowNormalBias = 0;
+                        }
+                        else
+                            Light.shadowBias = 0.01f;
                     }
-                    else
-                        Light.shadowBias = 0.01f;
                 }
             }
 
             //Lights
 
-            #region Counter-Strike T spawn point
+            #region Counter-Strike entities test
             /*if (Classname.Equals("info_player_terrorist"))
             {
                 //Placeholder model (can be removed if needed)
@@ -265,9 +360,11 @@ namespace uSource.Formats.Source.VBSP
                 ResourceManager.LoadModel(hostages[UnityEngine.Random.Range(0, hostages.Length)]).SetParent(transform, false);
             }*/
             #endregion
-            if (Data.Contains("rendermode"))
+
+            Int32 RenderModeIndex = Data.FindIndex(n => n == "rendermode");
+            if (RenderModeIndex != -1)
             {
-                if (Data[Data.FindIndex(n => n == "rendermode") + 1] == "10")
+                if (Data[RenderModeIndex + 1] == "10")
                 {
                     for (Int32 i = 0; i < transform.childCount; i++)
                     {
@@ -282,10 +379,10 @@ namespace uSource.Formats.Source.VBSP
                 string ModelName = Data[Data.FindIndex(n => n == "model") + 1];
 
                 if (!string.IsNullOrEmpty(ModelName))
-                    uResourceManager.LoadModel(ModelName, uLoader.LoadAnims, uLoader.useHitboxesOnModel).SetParent(transform, false);
+                    uResourceManager.LoadModel(ModelName, uLoader.LoadAnims, uLoader.UseHitboxesOnModel).SetParent(transform, false);
             }
 
-            if (uLoader.useInfoDecals && Classname.Equals("infodecal"))
+            if (uLoader.ParseDecals && Classname.Equals("infodecal"))
             {
                 String DecalName = Data[Data.FindIndex(n => n == "texture") + 1];
                 VMTFile DecalMaterial = uResourceManager.LoadMaterial(DecalName);
@@ -307,8 +404,8 @@ namespace uSource.Formats.Source.VBSP
                 DecalBuilder.Material = DecalMaterial.Material;
                 DecalBuilder.Material.SetTextureScale("_MainTex", new Vector2(-1, 1));
 
-                Single ScaleX = (DecalWidth * DecalScale) * uLoader.WorldScale;
-                Single ScaleY = (DecalHeight * DecalScale) * uLoader.WorldScale;
+                Single ScaleX = (DecalWidth * DecalScale) * uLoader.UnitScale;
+                Single ScaleY = (DecalHeight * DecalScale) * uLoader.UnitScale;
 
                 Single DepthSize = ScaleX;
                 if (ScaleY < DepthSize)
@@ -331,7 +428,7 @@ namespace uSource.Formats.Source.VBSP
             RenderSettings.ambientEquatorColor = new Color(CaclAvg(a.r, b.r), CaclAvg(a.g, b.g), CaclAvg(a.b, b.b), CaclAvg(a.a, b.a));
         }
 
-        static float CaclAvg(float first, float second)
+        static Single CaclAvg(Single first, Single second)
         {
             return (first + second) / 2;
         }

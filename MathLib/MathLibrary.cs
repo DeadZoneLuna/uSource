@@ -93,6 +93,101 @@ namespace uSource.MathLib
         }
 
         //SOURCEMATH
+
+        /// <summary>
+        /// (V_swap)
+        /// </summary>
+        /// <param name="x">Input X Component</param>
+        /// <param name="y">Input Y Component</param>
+        public static void SwapComponent<T>(ref T x, ref T y )
+        {
+            T temp = x;
+            x = y;
+            y = temp;
+        }
+
+        // solves for "a, b, c" where "a x^2 + b x + c = y", return true if solution exists
+        public static bool SolveInverseQuadratic(float x1, float y1, float x2, float y2, float x3, float y3, ref float a, ref float b, ref float c )
+        {
+            float det = (x1 - x2) * (x1 - x3) * (x2 - x3);
+
+            // FIXME: check with some sort of epsilon
+            if (det == 0.0f)
+                return false;
+
+            a = (x3 * (-y1 + y2) + x2 * (y1 - y3) + x1 * (-y2 + y3)) / det;
+
+            b = (x3 * x3 * (y1 - y2) + x1 * x1 * (y2 - y3) + x2 * x2 * (-y1 + y3)) / det;
+
+            c = (x1 * x3 * (-x1 + x3) * y2 + x2 * x2 * (x3 * y1 - x1 * y3) + x2 * (-(x3 * x3 * y1) + x1 * x1 * y3)) / det;
+
+            return true;
+        }
+
+        public static bool SolveInverseQuadraticMonotonic(Single x1, Single y1, Single x2, Single y2, Single x3, Single y3, ref Single a, ref Single b, ref Single c )
+        {
+            // use SolveInverseQuadratic, but if the sigm of the derivative at the start point is the wrong
+            // sign, displace the mid point
+
+            // first, sort parameters
+            if (x1 > x2)
+            {
+                SwapComponent(ref x1, ref x2);
+                SwapComponent(ref y1, ref y2);
+            }
+            if (x2 > x3)
+            {
+                SwapComponent(ref x2, ref x3);
+                SwapComponent(ref y2, ref y3);
+            }
+            if (x1 > x2)
+            {
+                SwapComponent(ref x1, ref x2);
+                SwapComponent(ref y1, ref y2);
+            }
+            // this code is not fast. what it does is when the curve would be non-monotonic, slowly shifts
+            // the center point closer to the linear line between the endpoints. Should anyone need htis
+            // function to be actually fast, it would be fairly easy to change it to be so.
+            for (float blend_to_linear_factor = 0.0f; blend_to_linear_factor <= 1.0; blend_to_linear_factor += 0.05f)
+            {
+                float tempy2 = (1 - blend_to_linear_factor) * y2 + blend_to_linear_factor * FLerp(y1, y3, x1, x3, x2);
+                if (!SolveInverseQuadratic(x1, y1, x2, tempy2, x3, y3, ref a, ref b, ref c))
+                    return false;
+                float derivative = 2.0f * a + b;
+                if ((y1 < y2) && (y2 < y3))                         // monotonically increasing
+                {
+                    if (derivative >= 0.0f)
+                        return true;
+                }
+                else
+                {
+                    if ((y1 > y2) && (y2 > y3))                         // monotonically decreasing
+                    {
+                        if (derivative <= 0.0f)
+                            return true;
+                    }
+                    else
+                        return true;
+                }
+            }
+            return true;
+        }
+
+        // 5-argument floating point linear interpolation.
+        // FLerp(f1,f2,i1,i2,x)=
+        //    f1 at x=i1
+        //    f2 at x=i2
+        //   smooth lerp between f1 and f2 at x>i1 and x<i2
+        //   extrapolation for x<i1 or x>i2
+        //
+        //   If you know a function f(x)'s value (f1) at position i1, and its value (f2) at position i2,
+        //   the function can be linearly interpolated with FLerp(f1,f2,i1,i2,x)
+        //    i2=i1 will cause a divide by zero.
+        public static Single FLerp(Single f1, Single f2, Single i1, Single i2, Single x)
+        {
+            return f1 + (f2 - f1) * (x - i1) / (i2 - i1);
+        }
+
         private enum EulerParity
         {
             Even,
