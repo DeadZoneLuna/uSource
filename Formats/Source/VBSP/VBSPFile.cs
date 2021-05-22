@@ -32,16 +32,23 @@ namespace uSource.Formats.Source.VBSP
         static Vector3[] BSP_Vertices;
         static Int32[] BSP_Surfedges;
 
+        static dworldlight_t[] BSP_WorldLights;
+
         // ======== OTHER ======= //
 
         static Face[] BSP_CFaces, BSP_CDisp;
         public static List<GameObject> BSP_Brushes;
 
+        public static Transform FacesGroup;
+        public static Transform WorldLightsGroup;
+        public static Transform EntitiesGroup;
+        public static Transform StaticPropsGroup;
+        public static GameObject BSP_WorldSpawn;
+
         // ======== ENTITIES ======= //
 
         public static Transform LightEnvironment;
         public static Transform ShadowControl;
-        public static GameObject BSP_WorldSpawn;
         public static Flare GlowFlare;
 
         // ======== DEBUG ======= //
@@ -72,6 +79,16 @@ namespace uSource.Formats.Source.VBSP
 
             BSP_WorldSpawn = new GameObject(BSPName);
 
+            FacesGroup = new GameObject("[Faces]").transform;
+            WorldLightsGroup = new GameObject("[WorldLights]").transform;
+            EntitiesGroup = new GameObject("[Entities]").transform;
+            StaticPropsGroup = new GameObject("[StaticProps]").transform;
+
+            FacesGroup.parent = BSP_WorldSpawn.transform;
+            WorldLightsGroup.parent = BSP_WorldSpawn.transform;
+            EntitiesGroup.parent = BSP_WorldSpawn.transform;
+            StaticPropsGroup.parent = BSP_WorldSpawn.transform;
+
             if (BSP_Header.Lumps[58].FileLen / 56 <= 0)
             {
                 BSP_Faces = new dface_t[BSP_Header.Lumps[7].FileLen / 56];
@@ -95,8 +112,9 @@ namespace uSource.Formats.Source.VBSP
             BSP_DispVerts = new dDispVert[BSP_Header.Lumps[33].FileLen / 20];
             BSPFileReader.ReadArray(ref BSP_DispVerts, BSP_Header.Lumps[33].FileOfs);
 
-            BSP_TexInfo = new texinfo_t[BSP_Header.Lumps[18].FileLen / 12];
-            BSPFileReader.ReadArray(ref BSP_TexInfo, BSP_Header.Lumps[18].FileOfs);
+            //LUMP_BRUSHES
+            //BSP_TexInfo = new texinfo_t[BSP_Header.Lumps[18].FileLen / 12];
+            //BSPFileReader.ReadArray(ref BSP_TexInfo, BSP_Header.Lumps[18].FileOfs);
 
             BSP_TexInfo = new texinfo_t[BSP_Header.Lumps[6].FileLen / 72];
             BSPFileReader.ReadArray(ref BSP_TexInfo, BSP_Header.Lumps[6].FileOfs);
@@ -123,6 +141,139 @@ namespace uSource.Formats.Source.VBSP
 
             BSP_Surfedges = new Int32[BSP_Header.Lumps[13].FileLen / 4];
             BSPFileReader.ReadArray(ref BSP_Surfedges, BSP_Header.Lumps[13].FileOfs);
+
+            if (uLoader.ParseLights && uLoader.UseWorldLights)
+            {
+                Int32 WorldLightSizeOf = 88;
+                Int32 WorldLightVersion = 0;
+                Boolean WorldLightHDR = BSP_Header.Lumps[15].FileLen <= 0;
+                Int32 WorldLightOffset;
+                if (WorldLightHDR)
+                {
+                    WorldLightVersion = BSP_Header.Lumps[54].Version;
+
+                    if (WorldLightVersion != 0)
+                        WorldLightSizeOf = 100;
+
+                    BSP_WorldLights = new dworldlight_t[BSP_Header.Lumps[54].FileLen / WorldLightSizeOf];
+                    WorldLightOffset = BSP_Header.Lumps[54].FileOfs;
+                }
+                else
+                {
+                    WorldLightVersion = BSP_Header.Lumps[15].Version;
+
+                    if (WorldLightVersion != 0)
+                        WorldLightSizeOf = 100;
+
+                    BSP_WorldLights = new dworldlight_t[BSP_Header.Lumps[15].FileLen / WorldLightSizeOf];
+                    WorldLightOffset = BSP_Header.Lumps[15].FileOfs;
+                }
+
+                // Fixup for backward compatability
+                for (Int32 wID = 0; wID < BSP_WorldLights.Length; wID++)
+                {
+                    BSPFileReader.BaseStream.Seek(WorldLightOffset + (WorldLightSizeOf * wID), SeekOrigin.Begin);
+                    //BSPFileReader.ReadType(ref BSP_WorldLights[wID], WorldLightOffset + (WorldLightSizeOf * wID));
+                    BSP_WorldLights[wID].origin = BSPFileReader.ReadVector3D(false);
+                    BSP_WorldLights[wID].intensity = BSPFileReader.ReadVector3D(false);
+                    BSP_WorldLights[wID].normal = BSPFileReader.ReadVector3D(false);
+                    if (WorldLightVersion != 0) BSPFileReader.ReadVector3D(false); // - shadow_cast_offset (skip only for updated dworldlights)
+                    BSP_WorldLights[wID].cluster = BSPFileReader.ReadInt32();
+                    BSP_WorldLights[wID].type = (emittype_t)BSPFileReader.ReadUInt32();
+                    BSP_WorldLights[wID].style = BSPFileReader.ReadInt32();
+                    BSP_WorldLights[wID].stopdot = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].stopdot2 = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].exponent = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].radius = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].constant_attn = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].linear_attn = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].quadratic_attn = BSPFileReader.ReadSingle();
+                    BSP_WorldLights[wID].flags = BSPFileReader.ReadInt32();
+                    BSP_WorldLights[wID].texinfo = BSPFileReader.ReadInt32();
+                    BSP_WorldLights[wID].owner = BSPFileReader.ReadInt32();
+
+                    dworldlight_t pLight = BSP_WorldLights[wID];
+
+                    if (pLight.type == emittype_t.emit_skyambient || pLight.type == emittype_t.emit_surface)
+                    {
+                        if(pLight.type == emittype_t.emit_skyambient)
+                        {
+                            //Normalize color
+                            Vector3 AmbientColor = NormalizeSourceColor(pLight);
+                            RenderSettings.ambientLight = new Color(AmbientColor.x, AmbientColor.y, AmbientColor.z, 1);
+                            RenderSettings.ambientSkyColor = RenderSettings.ambientLight;
+                            RenderSettings.ambientIntensity = Mathf.Sqrt(Vector3.Dot(AmbientColor, AmbientColor));
+                            //Normalize color
+                        }
+                        continue;
+                    }
+
+                    Light uLight = new GameObject(pLight.type.ToString()).AddComponent<Light>();
+
+                    uLight.transform.parent = WorldLightsGroup;
+
+                    //Normalize color
+                    Vector3 Color = NormalizeSourceColor(pLight);
+                    //Normalize color
+
+                    uLight.intensity = Mathf.Sqrt(Vector3.Dot(Color, Color));
+
+#if UNITY_EDITOR
+                    uLight.lightmapBakeType = LightmapBakeType.Baked;
+#endif
+                    if (pLight.type == emittype_t.emit_skylight)
+                        uLight.type = LightType.Directional;
+
+                    uLight.shadows = LightShadows.Soft;
+                    if (uLight.type == LightType.Directional)
+                    {
+                        uLight.intensity *= uLoader.LightEnvironmentScale;
+                        LightEnvironment = uLight.transform;
+                        uLight.shadowBias = 0.1f;
+                        uLight.shadowNormalBias = 0;
+                    }
+                    else
+                        uLight.shadowBias = 0.01f;
+
+                    if (pLight.type == emittype_t.emit_spotlight || pLight.type == emittype_t.emit_point)
+                    {
+                        // To match earlier lighting, use quadratic...
+                        if ((pLight.constant_attn == 0.0) && (pLight.linear_attn == 0.0) && (pLight.quadratic_attn == 0.0))
+                        {
+                            BSP_WorldLights[wID].quadratic_attn = 1.0f;
+                        }
+
+                        if (pLight.type == emittype_t.emit_spotlight)
+                        {
+                            uLight.type = LightType.Spot;
+
+                            if (pLight.exponent == 0.0)
+                                BSP_WorldLights[wID].exponent = 1.0f;
+
+                            Single SpotAngle = (2.0f * Mathf.Acos(pLight.stopdot2)) * Mathf.Rad2Deg;
+                            uLight.spotAngle = SpotAngle;
+
+                            if (SpotAngle >= 179)
+                                uLight.spotAngle -= 7f; // Constant to fix spot angles for Unity
+                        }
+                    }
+
+                    // I replaced the cuttoff_dot field (which took a value from 0 to 1)
+                    // with a max light radius. Radius of less than 1 will never happen,
+                    // so I can get away with this. When I set radius to 0, it'll 
+                    // run the old code which computed a radius
+                    ComputeLightRadius(ref BSP_WorldLights[wID], WorldLightHDR);
+
+                    if (BSP_WorldLights[wID].quadratic_attn > 0)
+                        uLight.intensity /= uLoader.QuadraticIntensityFixer;
+
+                    uLight.color = new Color(Color.x, Color.y, Color.z, 1);
+
+                    uLight.transform.position = new Vector3(-pLight.origin.y, pLight.origin.z, pLight.origin.x) * uLoader.UnitScale;
+                    uLight.range = (BSP_WorldLights[wID].radius) * uLoader.UnitScale;
+                    uLight.transform.forward = new Vector3(-pLight.normal.y, pLight.normal.z, pLight.normal.x);
+                }
+            }
 
             BSP_Brushes = new List<GameObject>();
 
@@ -167,6 +318,7 @@ namespace uSource.Formats.Source.VBSP
             BSP_Surfedges = null;
             BSP_CFaces = null;
             BSP_CDisp = null;
+            BSP_WorldLights = null;
             BSP_Brushes.Clear();
             BSPFileReader.BaseStream.Dispose();
             BSPFileReader.BaseStream.Close();
@@ -218,7 +370,7 @@ namespace uSource.Formats.Source.VBSP
                 else
                 {
                     EntityObject = new GameObject().transform;
-                    EntityObject.parent = BSP_WorldSpawn.transform;
+                    EntityObject.parent = EntitiesGroup;
                 }
 
                 if (EntityObject != null)
@@ -315,7 +467,7 @@ namespace uSource.Formats.Source.VBSP
             for (Int32 Index = 0; Index < BSP_Models.Length; Index++)
             {
                 GameObject Model = new GameObject("*" + Index);
-                Model.transform.parent = BSP_WorldSpawn.transform;
+                Model.transform.parent = FacesGroup;
 
                 Dictionary<Int32, List<Int32>> MeshInfo = new Dictionary<Int32, List<Int32>>();
 
@@ -455,7 +607,7 @@ namespace uSource.Formats.Source.VBSP
 
                 GameObject MeshObject = new GameObject(BSP_TextureStringData[i]);
                 //MeshObject.transform.localScale = new Vector3(1, 1, -1);
-                MeshObject.transform.parent = BSP_WorldSpawn.transform;
+                MeshObject.transform.parent = FacesGroup;
                 MeshObject.isStatic = true;
 
                 MeshRenderer MeshRenderer = MeshObject.AddComponent<MeshRenderer>();
@@ -502,7 +654,7 @@ namespace uSource.Formats.Source.VBSP
         {
             var obj = new GameObject();
             obj.name = name ?? obj.name;
-            obj.transform.SetParent(parent ? parent.transform : BSP_WorldSpawn.transform);
+            obj.transform.SetParent(parent ? parent.transform : FacesGroup);
             obj.transform.localPosition = Vector3.zero;
             obj.transform.localScale = Vector3.one;
             return obj;
@@ -861,6 +1013,64 @@ namespace uSource.Formats.Source.VBSP
             return Mathf.Clamp((float)c * exponent * 0.5f, 0, 255) / 255.0f;
         }
 
+        static void ComputeLightRadius(ref dworldlight_t pLight, Boolean bIsHDR)
+        {
+            // HACKHACK: Usually our designers scale the light intensity by 0.5 in HDR
+            // This keeps the behavior of the cutoff radius consistent between LDR and HDR
+            float minLightValue = bIsHDR ? 0.015f : 0.03f;
+
+            // Compute the light range based on attenuation factors
+            float flIntensity = Mathf.Sqrt(Vector3.Dot(pLight.intensity, pLight.intensity));
+
+            if (pLight.quadratic_attn == 0.0f)
+            {
+                if (pLight.linear_attn == 0.0f)
+                {
+                    if (pLight.radius == 0)
+                        // Infinite, but we're not going to draw it as such
+                        pLight.radius = 2000;
+                }
+                else
+                {
+                    pLight.radius = (flIntensity / minLightValue - pLight.constant_attn) / pLight.linear_attn;
+                }
+            }
+            else
+            {
+                float a = pLight.quadratic_attn;
+                float b = pLight.linear_attn;
+                float c = pLight.constant_attn - flIntensity / minLightValue;
+                float discrim = b * b - 4 * a * c;
+                if (discrim < 0.0f)
+                {
+                    if (pLight.radius == 0)
+                        // Infinite, but we're not going to draw it as such
+                        pLight.radius = 2000;
+                }
+                else
+                {
+                    pLight.radius = (-b + Mathf.Sqrt(discrim)) / (2.0f * a);
+                    if (pLight.radius < 0)
+                        pLight.radius = 0;
+                }
+            }
+        }
+
+        static Vector3 NormalizeSourceColor(dworldlight_t pLight)
+        {
+            //Normalize color
+            Vector3 color = pLight.intensity;
+            color.Normalize();
+
+            //1.0 / 2.2 = 0.45454545454
+            color[0] = Mathf.Pow(color[0], 0.45454545454f);
+            color[1] = Mathf.Pow(color[1], 0.45454545454f);
+            color[2] = Mathf.Pow(color[2], 0.45454545454f);
+
+            return color;
+            //Normalize color
+        }
+
         static void CreateSkybox(List<String> data)
         {
             String Base =
@@ -1002,7 +1212,7 @@ namespace uSource.Formats.Source.VBSP
                         MdlTransform.eulerAngles = m_Angles;
                         MdlTransform.localRotation = MdlTransform.localRotation * Quaternion.Euler(0, 90, 0);
                         MdlTransform.localScale = new Vector3(m_UniformScale, m_UniformScale, m_UniformScale);
-                        MdlTransform.parent = BSP_WorldSpawn.transform;
+                        MdlTransform.parent = StaticPropsGroup;
                     }
                 }
             }

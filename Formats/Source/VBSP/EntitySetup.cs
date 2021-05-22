@@ -130,7 +130,7 @@ namespace uSource.Formats.Source.VBSP
             }
 
             //Lights parsing
-            if (Classname.Contains("light") && !Classname.StartsWith("point"))
+            if (!uLoader.UseWorldLights && Classname.Contains("light") && !Classname.StartsWith("point"))
             {
                 Color ambientLight;
                 if (Classname.Equals("light_environment"))
@@ -189,6 +189,7 @@ namespace uSource.Formats.Source.VBSP
                         if (_distance != 0)
                         {
                             LightRadius = _distance;
+                            intensity *= 1.5f;
                         }
                         else
                         {

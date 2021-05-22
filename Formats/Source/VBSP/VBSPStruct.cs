@@ -93,6 +93,9 @@ namespace uSource.Formats.Source.VBSP
             // lightmap smoothing group
         }
 
+        /// <summary>
+        /// sizeof = 72
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct texinfo_t
         {
@@ -146,6 +149,9 @@ namespace uSource.Formats.Source.VBSP
             }
         }
 
+        /// <summary>
+        /// sizeof = 32
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct dtexdata_t
         {
@@ -158,6 +164,9 @@ namespace uSource.Formats.Source.VBSP
             public Int32 View_Width, View_Height;
         }
 
+        /// <summary>
+        /// sizeof = 48
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct dmodel_t
         {
@@ -261,6 +270,49 @@ namespace uSource.Formats.Source.VBSP
         }
 
         //Displacments
+
+        //LIGHTS
+
+        // lights that were used to illuminate the world
+        [Flags]
+        public enum emittype_t
+        {
+            emit_surface,       // 90 degree spotlight
+            emit_point,         // simple point light source
+            emit_spotlight,     // spotlight with penumbra
+            emit_skylight,      // directional light with no falloff (surface must trace to SKY texture)
+            emit_quakelight,    // linear falloff, non-lambertian
+            emit_skyambient,    // spherical light source with no falloff (surface must trace to SKY texture)
+        };
+
+        /// <summary>
+        /// LUMP - 15 (LDR) or 54 (HDR)
+        /// sizeof = 88
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct dworldlight_t
+        {
+            public Vector3 origin;
+            public Vector3 intensity;
+            public Vector3 normal;          // for surfaces and spotlights
+            public Int32 cluster;
+            public emittype_t type;
+            public Int32 style;
+            public Single stopdot;      // start of penumbra for emit_spotlight
+            public Single stopdot2;     // end of penumbra for emit_spotlight
+            public Single exponent;     // 
+            public Single radius;       // cutoff distance
+            // falloff for emit_spotlight + emit_point: 
+            // 1 / (constant_attn + linear_attn * dist + quadratic_attn * dist^2)
+            public Single constant_attn;
+            public Single linear_attn;
+            public Single quadratic_attn;
+            public Int32 flags;          // Uses a combination of the DWL_FLAGS_ defines.
+            public Int32 texinfo;        // 
+            public Int32 owner;          // entity that this light it relative to
+        };
+
+        //LIGHTS
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct dleafambientlighting_t

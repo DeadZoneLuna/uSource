@@ -85,6 +85,31 @@ namespace uSource
             uLoader.ParseLights = EditorGUILayout.Toggle("Parse lights (Beta)", uLoader.ParseLights);
             if (uLoader.ParseLights)
             {
+                GUILayout.BeginVertical("textfield");
+                GUILayout.FlexibleSpace();
+
+                GUILayout.BeginVertical("helpbox");
+                GUILayout.Label("BSP already have converted lights from entities to structure (WorldLights)\n!!!Recommend to use it!!!", EditorStyles.boldLabel);
+                GUILayout.EndVertical();
+
+                uLoader.UseWorldLights = EditorGUILayout.Toggle("Use world lights", uLoader.UseWorldLights);
+
+                if (uLoader.UseWorldLights)
+                {
+                    GUILayout.BeginVertical("helpbox");
+                    uLoader.QuadraticIntensityFixer = EditorGUILayout.FloatField("Quadratic intensity fix const", uLoader.QuadraticIntensityFixer);
+                    GUILayout.Label("For rebake lightmaps it used lower value (def: 1~)\n\nFor fix up brightness with dynamic lights, value can be set higher (def: 4~)", EditorStyles.miniBoldLabel);
+                    GUILayout.EndVertical();
+
+                    GUILayout.BeginVertical("helpbox");
+                    uLoader.LightEnvironmentScale = EditorGUILayout.FloatField("Scale intensity light environment", uLoader.LightEnvironmentScale);
+                    GUILayout.Label("Directional light looks more darkness in Unity\nThis parameter fix up that (multiply intensity)", EditorStyles.miniBoldLabel);
+                    GUILayout.EndVertical();
+                }
+
+                GUILayout.FlexibleSpace();
+                GUILayout.EndVertical();
+
                 uLoader.IgnoreShadowControl = EditorGUILayout.Toggle("Ignore shadow control", uLoader.IgnoreShadowControl);
                 uLoader.UseDynamicLight = EditorGUILayout.Toggle("Dynamic shadows", uLoader.UseDynamicLight);
             }
@@ -239,10 +264,13 @@ namespace uSource
         public static Boolean ParseBSPPhysics = false;
         public static Boolean Use3DSkybox = false;
         public static Boolean ParseDecals = false;
-        public static Boolean ParseLightmaps = true;
+        public static Boolean ParseLightmaps = false;
         public static Boolean UseGammaLighting = true;
         public static Boolean UseLightmapsAsTextureShader = false;
         public static Boolean ParseLights = true;
+        public static Boolean UseWorldLights = true;
+        public static Single QuadraticIntensityFixer = 1;
+        public static Single LightEnvironmentScale = 4;
         public static Boolean IgnoreShadowControl = false;
         public static Boolean UseDynamicLight = true;
         public static Boolean DebugEntities = true;
