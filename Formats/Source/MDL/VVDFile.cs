@@ -18,7 +18,7 @@ namespace uSource.Formats.Source.MDL
         {
             using (var FileStream = new uReader(FileInput))
             {
-                FileStream.ReadType(ref VVD_Header);
+                FileStream.ReadTypeFixed(ref VVD_Header, 64);
 
                 if (VVD_Header.checksum != mdl.MDL_Header.checksum)
                     throw new FileLoadException(String.Format("{0}: Does not match the checksum in the .mdl", mdl.MDL_Header.Name));
@@ -26,7 +26,7 @@ namespace uSource.Formats.Source.MDL
                 if (VVD_Header.numFixups > 0)
                 {
                     VVD_Fixups = new vertexFileFixup_t[VVD_Header.numFixups];
-                    FileStream.ReadArray(ref VVD_Fixups, VVD_Header.fixupTableStart);
+                    FileStream.ReadArrayFixed(ref VVD_Fixups, 12, VVD_Header.fixupTableStart);
                 }
 
                 //TODO
@@ -35,7 +35,7 @@ namespace uSource.Formats.Source.MDL
                 //"HasTagents" used to avoid non-zero length
                 var sizeVerts = (HasTangents ? VVD_Header.tangentDataStart - VVD_Header.vertexDataStart : FileStream.InputStream.Length - VVD_Header.vertexDataStart) / 48;
                 var tempVerts = new mstudiovertex_t[sizeVerts];
-                FileStream.ReadArray(ref tempVerts, VVD_Header.vertexDataStart);
+                FileStream.ReadArrayFixed(ref tempVerts, 48, VVD_Header.vertexDataStart);
 
                 VVD_Vertexes = new mstudiovertex_t[VVD_Header.numLODs][];
                 var lodVerts = new List<mstudiovertex_t>();

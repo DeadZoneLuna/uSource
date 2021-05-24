@@ -95,6 +95,9 @@ namespace uSource.Formats.Source.MDL
         public const byte STUDIO_ANIM_DELTA = 0x10;
         public const int STUDIO_ANIM_RAWROT2 = 0x20;
 
+        /// <summary>
+        /// sizeof = 392
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public unsafe struct studiohdr_t
         {
@@ -375,21 +378,21 @@ namespace uSource.Formats.Source.MDL
                 if ((Flags & STUDIO_ANIM_RAWROT) > 0)
                 {
                     var quat48 = new Quaternion48();
-                    br.ReadType(ref quat48);
+                    br.ReadTypeFixed(ref quat48, 6);
 
                     this.pQuat48 = quat48.quaternion;
                 }
                 if ((Flags & STUDIO_ANIM_RAWROT2) > 0)
                 {
                     var quat64 = new Quaternion64();
-                    br.ReadType(ref quat64);
+                    br.ReadTypeFixed(ref quat64, 8);
 
                     this.pQuat64 = quat64.quaternion;
                 }
                 if ((Flags & STUDIO_ANIM_RAWPOS) > 0)
                 {
                     var vec48 = new Vector48();
-                    br.ReadType(ref vec48);
+                    br.ReadTypeFixed(ref vec48, 6);
 
                     this.pVec48 = vec48.ToVector3();
                 }
@@ -736,6 +739,9 @@ namespace uSource.Formats.Source.MDL
             //public fixed int _numLodVertices[8];
         }
 
+        /// <summary>
+        /// sizeof = 64
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct vertexFileHeader_t
         {
@@ -756,6 +762,9 @@ namespace uSource.Formats.Source.MDL
             public Int32 tangentDataStart;
         }
 
+        /// <summary>
+        /// sizeof = 12
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct vertexFileFixup_t
         {
@@ -788,6 +797,9 @@ namespace uSource.Formats.Source.MDL
             public Byte numbones;
         }
 
+        /// <summary>
+        /// sizeof = 36
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct FileHeader_t
         {
@@ -902,6 +914,9 @@ namespace uSource.Formats.Source.MDL
             //public Int32 topologyOffset;
         }
 
+        /// <summary>
+        /// sizeof = 9
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct Vertex_t
         {

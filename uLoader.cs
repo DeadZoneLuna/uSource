@@ -103,7 +103,7 @@ namespace uSource
 
                     GUILayout.BeginVertical("helpbox");
                     uLoader.LightEnvironmentScale = EditorGUILayout.FloatField("Scale intensity light environment", uLoader.LightEnvironmentScale);
-                    GUILayout.Label("Directional light looks more darkness in Unity\nThis parameter fix up that (multiply intensity)", EditorStyles.miniBoldLabel);
+                    GUILayout.Label("Directional light looks more darkness in Unity\nThis parameter fixup that (multiply intensity)", EditorStyles.miniBoldLabel);
                     GUILayout.EndVertical();
                 }
 

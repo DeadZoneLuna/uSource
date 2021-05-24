@@ -40,7 +40,7 @@ namespace uSource.Formats.Source.MDL
         {
             using (var FileStream = new uReader(FileInput))
             {
-                FileStream.ReadType(ref MDL_Header);
+                FileStream.ReadTypeFixed(ref MDL_Header, 392);
 
                 if (MDL_Header.id != 0x54534449)
                     throw new FileLoadException("File signature does not match 'IDST'");
@@ -51,7 +51,7 @@ namespace uSource.Formats.Source.MDL
                 for (Int32 boneID = 0; boneID < MDL_Header.bone_count; boneID++)
                 {
                     Int32 boneOffset = MDL_Header.bone_offset + (216 * boneID);
-                    FileStream.ReadType(ref MDL_StudioBones[boneID], boneOffset);
+                    FileStream.ReadTypeFixed(ref MDL_StudioBones[boneID], 216, boneOffset);
                     MDL_BoneNames[boneID] = FileStream.ReadNullTerminatedString(boneOffset + MDL_StudioBones[boneID].sznameindex);
                 }
                 //Bones
@@ -63,7 +63,7 @@ namespace uSource.Formats.Source.MDL
                     for (Int32 hitboxsetID = 0; hitboxsetID < MDL_Header.hitbox_count; hitboxsetID++)
                     {
                         Int32 hitboxsetOffset = MDL_Header.hitbox_offset + (12 * hitboxsetID);
-                        FileStream.ReadType(ref MDL_Hitboxsets[hitboxsetID], hitboxsetOffset);
+                        FileStream.ReadTypeFixed(ref MDL_Hitboxsets[hitboxsetID], 12, hitboxsetOffset);
                         Hitboxes[hitboxsetID] = new Hitbox[MDL_Hitboxsets[hitboxsetID].numhitboxes];
 
                         for (Int32 hitboxID = 0; hitboxID < MDL_Hitboxsets[hitboxsetID].numhitboxes; hitboxID++)
@@ -71,7 +71,7 @@ namespace uSource.Formats.Source.MDL
                             Int32 hitboxOffset = hitboxsetOffset + (68 * hitboxID) + MDL_Hitboxsets[hitboxsetID].hitboxindex;
                             Hitboxes[hitboxsetID][hitboxID].BBox = new mstudiobbox_t();
 
-                            FileStream.ReadType(ref Hitboxes[hitboxsetID][hitboxID].BBox, hitboxOffset);
+                            FileStream.ReadTypeFixed(ref Hitboxes[hitboxsetID][hitboxID].BBox, 68, hitboxOffset);
                         }
                     }
                 }
@@ -87,7 +87,7 @@ namespace uSource.Formats.Source.MDL
                         for (Int32 AnimID = 0; AnimID < MDL_Header.localanim_count; AnimID++)
                         {
                             Int32 AnimOffset = MDL_Header.localanim_offset + (100 * AnimID);
-                            FileStream.ReadType(ref MDL_AniDescriptions[AnimID], AnimOffset);
+                            FileStream.ReadTypeFixed(ref MDL_AniDescriptions[AnimID], 100, AnimOffset);
                             mstudioanimdesc_t StudioAnim = MDL_AniDescriptions[AnimID];
 
                             String StudioAnimName = FileStream.ReadNullTerminatedString(AnimOffset + StudioAnim.sznameindex);
@@ -223,7 +223,7 @@ namespace uSource.Formats.Source.MDL
                         for (Int32 seqID = 0; seqID < MDL_Header.localseq_count; seqID++)
                         {
                             Int32 sequenceOffset = MDL_Header.localseq_offset + (212 * seqID);
-                            FileStream.ReadType(ref MDL_SeqDescriptions[seqID], sequenceOffset);
+                            FileStream.ReadTypeFixed(ref MDL_SeqDescriptions[seqID], 212, sequenceOffset);
                             mstudioseqdesc_t Sequence = MDL_SeqDescriptions[seqID];
                             Sequences[seqID] = new SeqInfo { name = FileStream.ReadNullTerminatedString(sequenceOffset + Sequence.szlabelindex), seq = Sequence };
 
@@ -248,7 +248,7 @@ namespace uSource.Formats.Source.MDL
                 for (Int32 texID = 0; texID < MDL_Header.texture_count; texID++)
                 {
                     Int32 textureOffset = MDL_Header.texture_offset + (64 * texID);
-                    FileStream.ReadType(ref MDL_TexturesInfo[texID], textureOffset);
+                    FileStream.ReadTypeFixed(ref MDL_TexturesInfo[texID], 64, textureOffset);
                     MDL_Textures[texID] = FileStream.ReadNullTerminatedString(textureOffset + MDL_TexturesInfo[texID].sznameindex);
                 }
 
@@ -256,8 +256,8 @@ namespace uSource.Formats.Source.MDL
                 MDL_TDirectories = new String[MDL_Header.texturedir_count];
                 for (Int32 dirID = 0; dirID < MDL_Header.texturedir_count; dirID++)
                 {
-                    FileStream.ReadType(ref TDirOffsets[dirID], MDL_Header.texturedir_offset + (4 * dirID));
-                    MDL_TDirectories[dirID] = FileStream.ReadNullTerminatedString(TDirOffsets[dirID]).Replace("\\", "/");
+                    FileStream.ReadTypeFixed(ref TDirOffsets[dirID], 4, MDL_Header.texturedir_offset + (4 * dirID));
+                    MDL_TDirectories[dirID] = FileStream.ReadNullTerminatedString(TDirOffsets[dirID]);//.Replace("\\", "/");
                 }
                 //Materials
 
@@ -267,7 +267,7 @@ namespace uSource.Formats.Source.MDL
                 {
                     mstudiobodyparts_t pBodypart = new mstudiobodyparts_t();
                     Int32 pBodypartOffset = MDL_Header.bodypart_offset + (16 * bodypartID);
-                    FileStream.ReadType(ref pBodypart, pBodypartOffset);
+                    FileStream.ReadTypeFixed(ref pBodypart, 16, pBodypartOffset);
 
                     MDL_Bodyparts[bodypartID].Name = FileStream.ReadNullTerminatedString(pBodypartOffset + pBodypart.sznameindex);
                     MDL_Bodyparts[bodypartID].Models = new StudioModel[pBodypart.nummodels];
@@ -276,7 +276,7 @@ namespace uSource.Formats.Source.MDL
                     {
                         mstudiomodel_t pModel = new mstudiomodel_t();
                         Int64 pModelOffset = pBodypartOffset + (148 * modelID) + pBodypart.modelindex;
-                        FileStream.ReadType(ref pModel, pModelOffset);
+                        FileStream.ReadTypeFixed(ref pModel, 148, pModelOffset);
 
                         MDL_Bodyparts[bodypartID].Models[modelID].isBlank = (pModel.numvertices <= 0 || pModel.nummeshes <= 0);
                         MDL_Bodyparts[bodypartID].Models[modelID].Model = pModel;
@@ -285,7 +285,7 @@ namespace uSource.Formats.Source.MDL
                         {
                             mstudiomesh_t pMesh = new mstudiomesh_t();
                             Int64 pMeshOffset = pModelOffset + (116 * meshID) + pModel.meshindex;
-                            FileStream.ReadType(ref pMesh, pMeshOffset);
+                            FileStream.ReadTypeFixed(ref pMesh, 116, pMeshOffset);
 
                             MDL_Bodyparts[bodypartID].Models[modelID].Meshes[meshID] = pMesh;
                         }

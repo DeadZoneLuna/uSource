@@ -120,6 +120,9 @@ namespace uSource.MathLib
 		public UInt16 bits;
 	}
 
+	/// <summary>
+	/// sizeof = 6
+	/// </summary>
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public struct Vector48
@@ -144,6 +147,9 @@ namespace uSource.MathLib
 		}
 	}
 
+	/// <summary>
+	/// sizeof = 6
+	/// </summary>
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public struct Quaternion48
@@ -217,6 +223,9 @@ namespace uSource.MathLib
 		}
 	}
 
+	/// <summary>
+	/// sizeof = 8
+	/// </summary>
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public struct Quaternion64

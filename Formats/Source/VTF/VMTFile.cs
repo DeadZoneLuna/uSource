@@ -30,7 +30,7 @@ namespace uSource.Formats.Source.VTF
         {
             if (DefaultMaterial == null)
             {
-                Material = DefaultMaterial = new Material(Shader.Find("VertexLit"));
+                Material = DefaultMaterial = new Material(Shader.Find("Diffuse"));
                 Material.name = FileName;
             }
         }

@@ -59,7 +59,7 @@ namespace uSource.Formats.Source.VBSP
         public static void Load(Stream stream, string BSPName)
         {
             BSPFileReader = new uReader(stream);
-            BSPFileReader.ReadType(ref BSP_Header);
+            BSPFileReader.ReadTypeFixed(ref BSP_Header, 1036);
 
             if (BSP_Header.Ident != 0x50534256)
                 throw new FileLoadException(String.Format("{0}: File signature does not match 'VBSP'", BSPName));
@@ -92,46 +92,46 @@ namespace uSource.Formats.Source.VBSP
             if (BSP_Header.Lumps[58].FileLen / 56 <= 0)
             {
                 BSP_Faces = new dface_t[BSP_Header.Lumps[7].FileLen / 56];
-                BSPFileReader.ReadArray(ref BSP_Faces, BSP_Header.Lumps[7].FileOfs);
+                BSPFileReader.ReadArrayFixed(ref BSP_Faces, 56, BSP_Header.Lumps[7].FileOfs);
             }
             else
             {
                 BSP_Faces = new dface_t[BSP_Header.Lumps[58].FileLen / 56];
-                BSPFileReader.ReadArray(ref BSP_Faces, BSP_Header.Lumps[58].FileOfs);
+                BSPFileReader.ReadArrayFixed(ref BSP_Faces, 56, BSP_Header.Lumps[58].FileOfs);
             }
 
             BSP_Models = new dmodel_t[BSP_Header.Lumps[14].FileLen / 48];
-            BSPFileReader.ReadArray(ref BSP_Models, BSP_Header.Lumps[14].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_Models, 48, BSP_Header.Lumps[14].FileOfs);
 
             BSP_Overlays = new doverlay_t[BSP_Header.Lumps[45].FileLen / 352];
-            BSPFileReader.ReadArray(ref BSP_Overlays, BSP_Header.Lumps[45].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_Overlays, 352, BSP_Header.Lumps[45].FileOfs);
 
             BSP_DispInfo = new ddispinfo_t[BSP_Header.Lumps[26].FileLen / 176];
-            BSPFileReader.ReadArray(ref BSP_DispInfo, BSP_Header.Lumps[26].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_DispInfo, 176, BSP_Header.Lumps[26].FileOfs);
 
             BSP_DispVerts = new dDispVert[BSP_Header.Lumps[33].FileLen / 20];
-            BSPFileReader.ReadArray(ref BSP_DispVerts, BSP_Header.Lumps[33].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_DispVerts, 20, BSP_Header.Lumps[33].FileOfs);
 
             //LUMP_BRUSHES
             //BSP_TexInfo = new texinfo_t[BSP_Header.Lumps[18].FileLen / 12];
             //BSPFileReader.ReadArray(ref BSP_TexInfo, BSP_Header.Lumps[18].FileOfs);
 
             BSP_TexInfo = new texinfo_t[BSP_Header.Lumps[6].FileLen / 72];
-            BSPFileReader.ReadArray(ref BSP_TexInfo, BSP_Header.Lumps[6].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_TexInfo, 72, BSP_Header.Lumps[6].FileOfs);
 
             BSP_TexData = new dtexdata_t[BSP_Header.Lumps[2].FileLen / 32];
-            BSPFileReader.ReadArray(ref BSP_TexData, BSP_Header.Lumps[2].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_TexData, 32, BSP_Header.Lumps[2].FileOfs);
 
             BSP_TextureStringData = new String[BSP_Header.Lumps[44].FileLen / 4];
 
             Int32[] BSP_TextureStringTable = new Int32[BSP_Header.Lumps[44].FileLen / 4];
-            BSPFileReader.ReadArray(ref BSP_TextureStringTable, BSP_Header.Lumps[44].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_TextureStringTable, 4, BSP_Header.Lumps[44].FileOfs);
 
             for (Int32 i = 0; i < BSP_TextureStringTable.Length; i++)
                 BSP_TextureStringData[i] = BSPFileReader.ReadNullTerminatedString(BSP_Header.Lumps[43].FileOfs + BSP_TextureStringTable[i]);
 
             BSP_Edges = new dedge_t[BSP_Header.Lumps[12].FileLen / 4];
-            BSPFileReader.ReadArray(ref BSP_Edges, BSP_Header.Lumps[12].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_Edges, 4, BSP_Header.Lumps[12].FileOfs);
 
             BSPFileReader.BaseStream.Seek(BSP_Header.Lumps[3].FileOfs, SeekOrigin.Begin);
             BSP_Vertices = new Vector3[BSP_Header.Lumps[3].FileLen / 12];
@@ -140,7 +140,7 @@ namespace uSource.Formats.Source.VBSP
                 BSP_Vertices[i] = BSPFileReader.ReadVector3D(true) * uLoader.UnitScale;
 
             BSP_Surfedges = new Int32[BSP_Header.Lumps[13].FileLen / 4];
-            BSPFileReader.ReadArray(ref BSP_Surfedges, BSP_Header.Lumps[13].FileOfs);
+            BSPFileReader.ReadArrayFixed(ref BSP_Surfedges, 4, BSP_Header.Lumps[13].FileOfs);
 
             if (uLoader.ParseLights && uLoader.UseWorldLights)
             {
@@ -174,9 +174,9 @@ namespace uSource.Formats.Source.VBSP
                 {
                     BSPFileReader.BaseStream.Seek(WorldLightOffset + (WorldLightSizeOf * wID), SeekOrigin.Begin);
                     //BSPFileReader.ReadType(ref BSP_WorldLights[wID], WorldLightOffset + (WorldLightSizeOf * wID));
-                    BSP_WorldLights[wID].origin = BSPFileReader.ReadVector3D(false);
+                    BSP_WorldLights[wID].origin = BSPFileReader.ReadVector3D();
                     BSP_WorldLights[wID].intensity = BSPFileReader.ReadVector3D(false);
-                    BSP_WorldLights[wID].normal = BSPFileReader.ReadVector3D(false);
+                    BSP_WorldLights[wID].normal = BSPFileReader.ReadVector3D();
                     if (WorldLightVersion != 0) BSPFileReader.ReadVector3D(false); // - shadow_cast_offset (skip only for updated dworldlights)
                     BSP_WorldLights[wID].cluster = BSPFileReader.ReadInt32();
                     BSP_WorldLights[wID].type = (emittype_t)BSPFileReader.ReadUInt32();
@@ -194,17 +194,14 @@ namespace uSource.Formats.Source.VBSP
 
                     dworldlight_t pLight = BSP_WorldLights[wID];
 
-                    if (pLight.type == emittype_t.emit_skyambient || pLight.type == emittype_t.emit_surface)
+                    if (pLight.type == emittype_t.emit_skyambient)
                     {
-                        if(pLight.type == emittype_t.emit_skyambient)
-                        {
-                            //Normalize color
-                            Vector3 AmbientColor = NormalizeSourceColor(pLight);
-                            RenderSettings.ambientLight = new Color(AmbientColor.x, AmbientColor.y, AmbientColor.z, 1);
-                            RenderSettings.ambientSkyColor = RenderSettings.ambientLight;
-                            RenderSettings.ambientIntensity = Mathf.Sqrt(Vector3.Dot(AmbientColor, AmbientColor));
-                            //Normalize color
-                        }
+                        //Normalize color
+                        Vector3 AmbientColor = NormalizeSourceColor(pLight);
+                        RenderSettings.ambientLight = new Color(AmbientColor.x, AmbientColor.y, AmbientColor.z, 1);
+                        RenderSettings.ambientSkyColor = RenderSettings.ambientLight;
+                        RenderSettings.ambientIntensity = Mathf.Sqrt(Vector3.Dot(AmbientColor, AmbientColor));
+                        //Normalize color
                         continue;
                     }
 
@@ -216,7 +213,10 @@ namespace uSource.Formats.Source.VBSP
                     Vector3 Color = NormalizeSourceColor(pLight);
                     //Normalize color
 
-                    uLight.intensity = Mathf.Sqrt(Vector3.Dot(Color, Color));
+                    if (pLight.type != emittype_t.emit_surface)
+                        uLight.intensity = Mathf.Sqrt(Vector3.Dot(Color, Color));
+                    else
+                        uLight.intensity = Mathf.Sqrt(Vector3.Dot(pLight.intensity, pLight.intensity));
 
 #if UNITY_EDITOR
                     uLight.lightmapBakeType = LightmapBakeType.Baked;
@@ -235,7 +235,7 @@ namespace uSource.Formats.Source.VBSP
                     else
                         uLight.shadowBias = 0.01f;
 
-                    if (pLight.type == emittype_t.emit_spotlight || pLight.type == emittype_t.emit_point)
+                    if (pLight.type == emittype_t.emit_spotlight || pLight.type == emittype_t.emit_point || pLight.type == emittype_t.emit_surface)
                     {
                         // To match earlier lighting, use quadratic...
                         if ((pLight.constant_attn == 0.0) && (pLight.linear_attn == 0.0) && (pLight.quadratic_attn == 0.0))
@@ -269,9 +269,17 @@ namespace uSource.Formats.Source.VBSP
 
                     uLight.color = new Color(Color.x, Color.y, Color.z, 1);
 
-                    uLight.transform.position = new Vector3(-pLight.origin.y, pLight.origin.z, pLight.origin.x) * uLoader.UnitScale;
-                    uLight.range = (BSP_WorldLights[wID].radius) * uLoader.UnitScale;
-                    uLight.transform.forward = new Vector3(-pLight.normal.y, pLight.normal.z, pLight.normal.x);
+                    if (pLight.type != emittype_t.emit_surface)
+                        uLight.range = (BSP_WorldLights[wID].radius) * uLoader.UnitScale;
+                    else
+                    {
+                        uLight.type = LightType.Area;
+                        uLight.intensity += BSP_WorldLights[wID].radius * uLoader.UnitScale;
+                        uLight.areaSize = new Vector2(uLoader.UnitScale, uLoader.UnitScale);
+                    }
+
+                    uLight.transform.position = pLight.origin * uLoader.UnitScale;
+                    uLight.transform.forward = pLight.normal;
                 }
             }
 
@@ -971,7 +979,7 @@ namespace uSource.Formats.Source.VBSP
             Offset += BSP_Header.Lumps[58].FileLen / 56 > 0 ? BSP_Header.Lumps[53].FileOfs : BSP_Header.Lumps[8].FileOfs;
 
             ColorRGBExp32 ColorRGBExp32 = new ColorRGBExp32();
-            BSPFileReader.ReadType(ref ColorRGBExp32, Offset);
+            BSPFileReader.ReadTypeFixed(ref ColorRGBExp32, 4, Offset);
 
             float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
 
@@ -989,7 +997,7 @@ namespace uSource.Formats.Source.VBSP
             Offset += BSP_Header.Lumps[58].FileLen / 56 > 0 ? BSP_Header.Lumps[53].FileOfs : BSP_Header.Lumps[8].FileOfs;
 
             ColorRGBExp32 ColorRGBExp32 = new ColorRGBExp32();
-            BSPFileReader.ReadType(ref ColorRGBExp32, Offset);
+            BSPFileReader.ReadTypeFixed(ref ColorRGBExp32, 4, Offset);
 
             float Pow = Mathf.Pow(2, ColorRGBExp32.exponent);
 
@@ -1073,18 +1081,16 @@ namespace uSource.Formats.Source.VBSP
 
         static void CreateSkybox(List<String> data)
         {
-            String Base =
-                "skybox/" + data[data.FindIndex(n => n == "skyname") + 1],
-                LDR = Base.Replace("_hdr", "");
+            String Base = "skybox/" + data[data.FindIndex(n => n == "skyname") + 1];
+            //String LDR = Base;//.Replace("_hdr", "");
 
+            Int32 HDRIndex = Base.IndexOf("_hdr", StringComparison.Ordinal);
+            if (HDRIndex != -1)
+                Base.Remove(HDRIndex, 4);
+
+            String BaseUP = Base + "up";
             String[] Sides = new[] { "_FrontTex", "_BackTex", "_LeftTex", "_RightTex", "_UpTex", "_DownTex" };
             Material Material = new Material(Shader.Find("Mobile/Skybox"));
-
-            /*foreach (String Side in new[] { "_FrontTex", "_BackTex", "_LeftTex", "_RightTex", "_UpTex" })
-            {
-                Material.SetTextureScale(Side, new Vector2(1, -1));
-                Material.SetTextureOffset(Side, new Vector2(0, 1));
-            }*/
 
             //Invert
             for (int i = 0; i < 5; i++)
@@ -1093,32 +1099,25 @@ namespace uSource.Formats.Source.VBSP
                 Material.SetTextureOffset(Sides[i], new Vector2(0, 1));
             }
 
-            Texture _FrontTex = uResourceManager.LoadTexture(LDR + "rt", Base + "rt")[0, 0];
-            if (_FrontTex != null)
-            {
-                _FrontTex.wrapMode = TextureWrapMode.Clamp;
-                Texture _BackTex = uResourceManager.LoadTexture(LDR + "lf", Base + "lf")[0, 0];
-                _BackTex.wrapMode = TextureWrapMode.Clamp;
-                Texture _LeftTex = uResourceManager.LoadTexture(LDR + "ft", Base + "ft")[0, 0];
-                _LeftTex.wrapMode = TextureWrapMode.Clamp;
-                Texture _RightTex = uResourceManager.LoadTexture(LDR + "bk", Base + "bk")[0, 0];
-                _RightTex.wrapMode = TextureWrapMode.Clamp;
-                Texture _UpTex = uResourceManager.LoadTexture(LDR + "up", Base + "up")[0, 0];
-                _UpTex.wrapMode = TextureWrapMode.Clamp;
-                Texture _DownTex = uResourceManager.LoadTexture(LDR + "dn", Base + "dn")[0, 0];
-                _DownTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _FrontTex = uResourceManager.LoadTexture(Base + "rt", BaseUP)[0, 0];
+            _FrontTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _BackTex = uResourceManager.LoadTexture(Base + "lf", BaseUP)[0, 0];
+            _BackTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _LeftTex = uResourceManager.LoadTexture(Base + "ft", BaseUP)[0, 0];
+            _LeftTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _RightTex = uResourceManager.LoadTexture(Base + "bk", BaseUP)[0, 0];
+            _RightTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _UpTex = uResourceManager.LoadTexture(BaseUP)[0, 0];
+            _UpTex.wrapMode = TextureWrapMode.Clamp;
+            Texture _DownTex = uResourceManager.LoadTexture(Base + "dn", BaseUP)[0, 0];
+            _DownTex.wrapMode = TextureWrapMode.Clamp;
 
-                Material.SetTexture(Sides[0], _FrontTex);
-                Material.SetTexture(Sides[1], _BackTex);
-                Material.SetTexture(Sides[2], _LeftTex);
-                Material.SetTexture(Sides[3], _RightTex);
-                Material.SetTexture(Sides[4], _UpTex);
-                Material.SetTexture(Sides[5], _DownTex);
-            }
-            else
-            {
-                Material = new Material(Shader.Find("Mobile/Skybox"));//new Material(Shader.Find("Skybox/Procedural"));
-            }
+            Material.SetTexture(Sides[0], _FrontTex);
+            Material.SetTexture(Sides[1], _BackTex);
+            Material.SetTexture(Sides[2], _LeftTex);
+            Material.SetTexture(Sides[3], _RightTex);
+            Material.SetTexture(Sides[4], _UpTex);
+            Material.SetTexture(Sides[5], _DownTex);
 
             RenderSettings.skybox = Material;
         }
@@ -1138,7 +1137,7 @@ namespace uSource.Formats.Source.VBSP
             Int32 GameLumpCount = BSPFileReader.ReadInt32();
 
             dgamelump_t[] BSP_GameLump = new dgamelump_t[GameLumpCount];
-            BSPFileReader.ReadArray(ref BSP_GameLump);
+            BSPFileReader.ReadArrayFixed(ref BSP_GameLump, 16);
 
             for (Int32 i = 0; i < GameLumpCount; i++)
             {
@@ -1151,14 +1150,14 @@ namespace uSource.Formats.Source.VBSP
                     String[] ModelEntries = new String[BSPFileReader.ReadInt32()];
                     for (Int32 j = 0; j < ModelEntries.Length; j++)
                     {
-                        ModelEntries[j] = new String(BSPFileReader.ReadChars(128)).Replace(".mdl", "");
+                        ModelEntries[j] = new String(BSPFileReader.ReadChars(128));//.Replace(".mdl", "");
 
                         if (ModelEntries[j].Contains('\0'))
                             ModelEntries[j] = ModelEntries[j].Split('\0')[0];
                     }
 
                     UInt16[] LeafEntries = new UInt16[BSPFileReader.ReadInt32()];
-                    BSPFileReader.ReadArray(ref LeafEntries);
+                    BSPFileReader.ReadArrayFixed(ref LeafEntries, 2);
 
                     Int64 nStaticProps = BSPFileReader.ReadInt32();
 
@@ -1184,7 +1183,7 @@ namespace uSource.Formats.Source.VBSP
                         {
                             case 11:
                                 StaticPropLumpV11_t StaticPropLumpV11_t = new StaticPropLumpV11_t();
-                                BSPFileReader.ReadType(ref StaticPropLumpV11_t);
+                                BSPFileReader.ReadTypeFixed(ref StaticPropLumpV11_t, 80);
 
                                 StaticPropName = ModelEntries[StaticPropLumpV11_t.m_PropType];
                                 m_Origin = MathLibrary.SwapY(StaticPropLumpV11_t.m_Origin) * uLoader.UnitScale;
@@ -1194,7 +1193,7 @@ namespace uSource.Formats.Source.VBSP
 
                             default:
                                 StaticPropLumpV4_t StaticPropLumpV4_t = new StaticPropLumpV4_t();
-                                BSPFileReader.ReadType(ref StaticPropLumpV4_t);
+                                BSPFileReader.ReadTypeFixed(ref StaticPropLumpV4_t, 56);
 
                                 StaticPropName = ModelEntries[StaticPropLumpV4_t.m_PropType];
                                 m_Origin = MathLibrary.SwapY(StaticPropLumpV4_t.m_Origin) * uLoader.UnitScale;

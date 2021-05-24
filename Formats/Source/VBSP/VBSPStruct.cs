@@ -43,6 +43,9 @@ namespace uSource.Formats.Source.VBSP
             // vertex indices
         }
 
+        /// <summary>
+        /// sizeof = 56
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct dface_t
         {
@@ -189,6 +192,9 @@ namespace uSource.Formats.Source.VBSP
             Int32 solidCount;  // Number of collision data sections
         }
 
+        /// <summary>
+        /// sizeof = 352
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct doverlay_t
         {
@@ -213,6 +219,9 @@ namespace uSource.Formats.Source.VBSP
             public Vector3 BasisNormal;
         }
 
+        /// <summary>
+        /// sizeof = 16
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct dgamelump_t
         {
@@ -230,6 +239,9 @@ namespace uSource.Formats.Source.VBSP
 
         //Displacments
 
+        /// <summary>
+        /// sizeof = 176
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct ddispinfo_t
         {
@@ -258,6 +270,9 @@ namespace uSource.Formats.Source.VBSP
             public Byte[] Unknown;
         }
 
+        /// <summary>
+        /// sizeof = 20
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct dDispVert
         {
@@ -331,6 +346,9 @@ namespace uSource.Formats.Source.VBSP
             public ColorRGBExp32[] m_Color;
         };
 
+        /// <summary>
+        /// sizeof = 4
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct ColorRGBExp32
         {

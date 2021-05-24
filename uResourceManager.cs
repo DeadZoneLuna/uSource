@@ -420,11 +420,10 @@ namespace uSource
                 TextureCache = new Dictionary<String, Texture2D[,]>();
 
             String TempPath;
-
-            if (String.IsNullOrEmpty(AltTexture))
-                TempPath = NormalizePath(TexturePath, MaterialsSubFolder, MaterialsExtension[1], false);
-            else
-                TempPath = NormalizePath(AltTexture, MaterialsSubFolder, MaterialsExtension[1], false);
+            
+            TempPath = NormalizePath(TexturePath, MaterialsSubFolder, MaterialsExtension[1], false);
+            if (AltTexture != null)
+                AltTexture = NormalizePath(AltTexture, MaterialsSubFolder, MaterialsExtension[1]);
 
             if (TextureCache.ContainsKey(TempPath))
                 return TextureCache[TempPath];
@@ -436,7 +435,11 @@ namespace uSource
                 if (vtfStream == null)
                 {
                     Debug.LogWarning(FileName + " NOT FOUND!");
-                    return new[,] { { Texture2D.whiteTexture } };
+
+                    if (String.IsNullOrEmpty(AltTexture))
+                        return new[,] { { Texture2D.whiteTexture } };
+                    else
+                        return LoadTexture(AltTexture);
                 }
 
                 try

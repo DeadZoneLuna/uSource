@@ -15,7 +15,7 @@ namespace uSource.Formats.Source.MDL
 			using (var FileStream = new uReader(FileInput))
 			{
 				studiohdr_t MDL_Header = StudioMDL.MDL_Header;
-				FileStream.ReadType(ref VTX_Header);
+				FileStream.ReadTypeFixed(ref VTX_Header, 36);
 
 				if (VTX_Header.checkSum != MDL_Header.checksum)
 					throw new FileLoadException(String.Format("{0}: Does not match the checksum in the .mdl", MDL_Header.Name));
@@ -25,7 +25,7 @@ namespace uSource.Formats.Source.MDL
 				{
 					BodyPartHeader_t pBodypart = new BodyPartHeader_t();
 					Int64 pBodypartOffset = VTX_Header.bodyPartOffset + (8 * bodypartID);
-					FileStream.ReadType(ref pBodypart, pBodypartOffset);
+					FileStream.ReadTypeFixed(ref pBodypart, 8, pBodypartOffset);
 
 					StudioBodyPart MDLPart = StudioMDL.MDL_Bodyparts[bodypartID];
 
@@ -41,14 +41,14 @@ namespace uSource.Formats.Source.MDL
 
 						ModelHeader_t pModel = new ModelHeader_t();
 						Int64 pModelOffset = pBodypartOffset + (8 * modelID) + pBodypart.modelOffset;
-						FileStream.ReadType(ref pModel, pModelOffset);
+						FileStream.ReadTypeFixed(ref pModel, 8, pModelOffset);
 
 						//TODO: Fix all lod's per model to use other lod's than 1 (VVD / MDL)
 						for (Int32 LODID = 0; LODID < 1; LODID++)
 						{
 							ModelLODHeader_t pLOD = new ModelLODHeader_t();
 							Int64 pLODOffset = pModelOffset + (12 * LODID) + pModel.lodOffset;
-							FileStream.ReadType(ref pLOD, pLODOffset);
+							FileStream.ReadTypeFixed(ref pLOD, 12, pLODOffset);
 
 							//Temp remember verts count per lod model
 							Int32 TotalVerts = 0;
@@ -60,18 +60,18 @@ namespace uSource.Formats.Source.MDL
 
 								MeshHeader_t pMesh = new MeshHeader_t();
 								Int64 pMeshOffset = pLODOffset + (9 * MeshID) + pLOD.meshOffset;
-								FileStream.ReadType(ref pMesh, pMeshOffset);
+								FileStream.ReadTypeFixed(ref pMesh, 9, pMeshOffset);
 
 								List<Int32> pIndices = new List<Int32>();
 								for (Int32 stripgroupID = 0; stripgroupID < pMesh.numStripGroups; stripgroupID++)
 								{
 									StripGroupHeader_t pStripGroup = new StripGroupHeader_t();
 									Int64 pStripGroupOffset = pMeshOffset + (25 * stripgroupID) + pMesh.stripGroupHeaderOffset;
-									FileStream.ReadType(ref pStripGroup, pStripGroupOffset);
+									FileStream.ReadTypeFixed(ref pStripGroup, 25, pStripGroupOffset);
 
 									Vertex_t[] Vertexes = new Vertex_t[pStripGroup.numVerts];
 									FileStream.BaseStream.Position = pStripGroupOffset + pStripGroup.vertOffset;
-									FileStream.ReadArray(ref Vertexes);
+									FileStream.ReadArrayFixed(ref Vertexes, 9);
 
 									FileStream.BaseStream.Position = pStripGroupOffset + pStripGroup.indexOffset;
 									Int16[] Indices = FileStream.ReadShortArray(pStripGroup.numIndices);
@@ -80,7 +80,7 @@ namespace uSource.Formats.Source.MDL
 									{
 										StripHeader_t VTXStrip = new StripHeader_t();
 										Int64 VTXStripOffset = pStripGroupOffset + (27 * stripID) + pStripGroup.stripOffset;
-										FileStream.ReadType(ref VTXStrip, VTXStripOffset);
+										FileStream.ReadTypeFixed(ref VTXStrip, 27, VTXStripOffset);
 
 										if ((VTXStrip.flags & VTXStripGroupTriListFlag) > 0)
 										{

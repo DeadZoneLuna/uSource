@@ -58,6 +58,34 @@ namespace uSource
                 ReadType(ref Array[i]);
         }
 
+        public void ReadTypeFixed<T>(ref T Variable, Int32 TypeSizeOf, long? Offset = null)
+        {
+            if (Offset.HasValue)
+                InputStream.Seek(Offset.Value, SeekOrigin.Begin);
+
+            Byte[] Buffer = new byte[TypeSizeOf];
+            InputStream.Read(Buffer, 0, Buffer.Length);
+
+            GCHandle Handle = GCHandle.Alloc(Buffer, GCHandleType.Pinned);
+            try
+            {
+                Variable = (T)Marshal.PtrToStructure(Handle.AddrOfPinnedObject(), typeof(T));
+            }
+            finally
+            {
+                Handle.Free();
+            }
+        }
+
+        public void ReadArrayFixed<T>(ref T[] Array, Int32 TypeSizeOf, long? Offset = null)
+        {
+            if (Offset.HasValue)
+                InputStream.Seek(Offset.Value, SeekOrigin.Begin);
+
+            for (Int32 i = 0; i < Array.Length; i++)
+                ReadTypeFixed(ref Array[i], TypeSizeOf);
+        }
+
         [ThreadStatic]
         private static StringBuilder _sBuilder;
         public String ReadNullTerminatedString(long? Offset = null)
@@ -80,29 +108,47 @@ namespace uSource
             }
         }
 
+        public Vector3 ReadVector2D()
+        {
+            Vector2 Vector2D;// = new Vector2(ReadSingle(), ReadSingle());
+            Vector2D.x = ReadSingle();
+            Vector2D.y = ReadSingle();
+
+            return Vector2D;
+        }
+
         public Vector3 ReadVector3D(bool SwapZY = true)
         {
-            Vector3 Vector3D = new Vector3(ReadSingle(), ReadSingle(), ReadSingle());
+            Vector3 Vector3D;// = new Vector3(ReadSingle(), ReadSingle(), ReadSingle());
+            Vector3D.x = ReadSingle();
+            Vector3D.y = ReadSingle();
+            Vector3D.z = ReadSingle();
 
             if (SwapZY)
             {
-                float x = Vector3D.x;
-                float y = Vector3D.y;
-                float z = Vector3D.z;
+                //float x = Vector3D.x;
+                //float y = Vector3D.y;
+                //float z = Vector3D.z;
 
-                Vector3D.x = -y;
-                Vector3D.y = z;
-                Vector3D.z = x;
+                Single tempX = Vector3D.x;
+
+                Vector3D.x = -Vector3D.y;
+                Vector3D.y = Vector3D.z;
+                Vector3D.z = tempX;
             }
 
             return Vector3D;
         }
 
-        public Vector3 ReadVector2D()
+        public Vector3 ReadVector4D()
         {
-            Vector2 Vector2D = new Vector2(ReadSingle(), ReadSingle());
+            Vector4 Vector4D;
+            Vector4D.x = ReadSingle();
+            Vector4D.y = ReadSingle();
+            Vector4D.z = ReadSingle();
+            Vector4D.w = ReadSingle();
 
-            return Vector2D;
+            return Vector4D;
         }
     }
 }
