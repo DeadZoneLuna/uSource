@@ -140,6 +140,11 @@ namespace uSource
             GUILayout.Label("MDL Import Settings", EditorStyles.boldLabel);
 
             uLoader.UseStaticPropFlag = EditorGUILayout.Toggle("Load static bones", uLoader.UseStaticPropFlag);
+            GUILayout.BeginVertical("helpbox");
+            uLoader.ModelsLightmapSize = EditorGUILayout.FloatField("Lightmap scale factor", uLoader.ModelsLightmapSize);
+            GUILayout.Label("Used to scale lightmap on models (editor & rebake only)", EditorStyles.miniBoldLabel);
+            GUILayout.EndVertical();
+
             uLoader.UseHitboxesOnModel = EditorGUILayout.Toggle("Load hitboxes model", uLoader.UseHitboxesOnModel);
             uLoader.DrawArmature = EditorGUILayout.Toggle("Debug skeleton / bones", uLoader.DrawArmature);
             uLoader.ModelPath = EditorGUILayout.TextField("Model:", uLoader.ModelPath);
@@ -295,6 +300,7 @@ namespace uSource
         public static String ModelPath = @"weapons/v_rif_ak47";
         public static String SubModelPath = @"weapons/ct_arms";
         public static Boolean UseStaticPropFlag = false;
+        public static Single ModelsLightmapSize = 0f;
         public static Boolean UseHitboxesOnModel = false;
         public static Boolean DrawArmature = false;
 

@@ -478,7 +478,7 @@ namespace uSource.Formats.Source.MDL
 
 #if UNITY_EDITOR
                             UnityEditor.SerializedObject so = new UnityEditor.SerializedObject(Renderer);
-                            so.FindProperty("m_ScaleInLightmap").floatValue = 0;
+                            so.FindProperty("m_ScaleInLightmap").floatValue = uLoader.ModelsLightmapSize;
                             so.ApplyModifiedProperties();
 #endif
                             Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
