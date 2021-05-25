@@ -943,15 +943,19 @@ namespace uSource.Formats.Source.VBSP
                     continue;
 
                 LMs[i] = new Texture2D(InpFaces[i].LightMapW, InpFaces[i].LightMapH, TextureFormat.RGB24, false, true);
-                Color32[] TexPixels = new Color32[LMs[i].width * LMs[i].height];
 
-                for (Int32 j = 0; j < TexPixels.Length; j++)
+                if (uLoader.ParseLightmaps)
                 {
-                    ColorRGBExp32 ColorRGBExp32 = uLoader.UseGammaLighting ? TexLightToGamma(InpFaces[i].LightOfs + (j * 4)) : TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
-                    TexPixels[j] = new Color32(ColorRGBExp32.r, ColorRGBExp32.g, ColorRGBExp32.b, 255);
-                }
+                    Color32[] TexPixels = new Color32[LMs[i].width * LMs[i].height];
 
-                LMs[i].SetPixels32(TexPixels);
+                    for (Int32 j = 0; j < TexPixels.Length; j++)
+                    {
+                        ColorRGBExp32 ColorRGBExp32 = uLoader.UseGammaLighting ? TexLightToGamma(InpFaces[i].LightOfs + (j * 4)) : TexLightToLinear(InpFaces[i].LightOfs + (j * 4));
+                        TexPixels[j] = new Color32(ColorRGBExp32.r, ColorRGBExp32.g, ColorRGBExp32.b, 255);
+                    }
+
+                    LMs[i].SetPixels32(TexPixels);
+                }
             }
 
             Rect[] UVs2 = Lightmap_tex.PackTextures(LMs, 1);
