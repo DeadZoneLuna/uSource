@@ -41,7 +41,7 @@ namespace uSource
                 return true;
             else
             {
-                String path = Path.Combine(root, FilePath);
+                String path = root + "/" + FilePath;//Path.Combine(root, FilePath);
                 if (File.Exists(path))
                 {
                     uResourceManager.DirectoryCache.Add(FilePath, path);
@@ -72,8 +72,6 @@ namespace uSource
                 currentFile.Close();
                 return;
             }
-
-            return;
         }
     }
 
@@ -217,7 +215,7 @@ namespace uSource
             //UnityEngine.Profiling.Profiler.BeginSample("Init Manager");
 
             //Init root path with mods
-            String FullPath = Path.Combine(RootPath, ModFolder + "/");
+            String FullPath = slashesRegex.Replace(RootPath + "/" + ModFolder + "/", "/");//Path.Combine(RootPath, ModFolder + "/");
 
             if (Directory.Exists(FullPath))
                 _providers.Add(new DirProvider(FullPath));
@@ -226,7 +224,7 @@ namespace uSource
             {
                 String vpkFile = DirPaks[pakID];
 
-                String dirPath = Path.Combine(RootPath, ModFolder + "/" + vpkFile + ".vpk");
+                String dirPath = FullPath + vpkFile + ".vpk";//Path.Combine(RootPath, ModFolder + "/" + vpkFile + ".vpk");
 
                 if (File.Exists(dirPath))
                 {
@@ -270,9 +268,18 @@ namespace uSource
             Init(uLoader.RootPath, uLoader.ModFolders[0], uLoader.DirPaks[0]);
 
             String FileName = MapsSubFolder + MapName.ToLower() + MapsExtension;
+            String FilePath = slashesRegex.Replace(uLoader.RootPath + "/", "/") + uLoader.ModFolders[0] + "/" + FileName;
+            Stream TempFile = null;
+
             try
             {
-                using (Stream BSPStream = OpenFile(FileName))
+                //Make sure if map exist in folder
+                if (File.Exists(FilePath))
+                    TempFile = File.OpenRead(FilePath);
+                else //Else try load from VPK? :D (somegames stored maps in VPK, why..? D:)
+                    TempFile = OpenFile(FileName);
+
+                using (Stream BSPStream = TempFile)
                 {
                     if (BSPStream == null)
                     {
@@ -291,6 +298,12 @@ namespace uSource
             {
                 CloseStreams();
                 RemoveResourceProviders();
+                if (TempFile != null)
+                {
+                    TempFile.Dispose();
+                    TempFile.Close();
+                    TempFile = null;
+                }
             }
         }
 
@@ -458,7 +471,7 @@ namespace uSource
             return VTFFile.Frames;
         }
 
-        static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
+        public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
         public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
         {
             //TODO: make sure if subfolder was found only at the beginning 
@@ -478,7 +491,7 @@ namespace uSource
                 return FileName;
         }
 
-        public static Boolean ContainsFile(String FileName, String SubFolder = "", String FileExtension = "")
+        public static Boolean ContainsFile(String FileName, String SubFolder, String FileExtension)
         {
             String FilePath = NormalizePath(FileName, SubFolder, FileExtension);
             for (Int32 i = _providers.Count - 1; i >= 0; --i)

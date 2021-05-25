@@ -10,7 +10,7 @@ namespace uSource.Example
         public Vector3 offset3DSky;
         public float skyScale;
         public Transform skyCamera;
-        bool use3dSky = false;
+        public bool use3dSky = false;
         //3DSkybox
 
         public float cameraSensitivity = 90;
