@@ -458,14 +458,11 @@ namespace uSource
             return VTFFile.Frames;
         }
 
-        //private static Regex doubleDotRegex1 = new Regex("^(.*/)?([^/\\\\.]+/\\\\.\\\\./)(.+)$");
+        static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
         public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
         {
-            //Normalize paths
-            Int32 dotPath = FileName.IndexOf("./", StringComparison.Ordinal);
-            if (dotPath >= 0)
-                FileName = FileName.Remove(dotPath, 1);
-
+            //TODO: make sure if subfolder was found only at the beginning 
+            //As there may including special names folder with subfolder name & this will be create problems with normalize
             Int32 SubIndex = FileName.IndexOf(SubFolder, StringComparison.Ordinal);
             if (SubIndex >= 0)
                 FileName = FileName.Remove(SubIndex, SubFolder.Length);
@@ -474,11 +471,11 @@ namespace uSource
             if (ExtensionIndex >= 0)
                 FileName = FileName.Remove(ExtensionIndex, FileExtension.Length);
 
+            FileName = slashesRegex.Replace(SubFolder + FileName, "/").ToLower();
             if (outputExtension)
-                return (SubFolder + FileName + FileExtension).ToLower().Replace('\\', '/').Replace("//", "/");
+                return FileName + FileExtension;
             else
-                return (SubFolder + FileName).ToLower().Replace('\\', '/').Replace("//", "/");
-            //Normalize paths
+                return FileName;
         }
 
         public static Boolean ContainsFile(String FileName, String SubFolder = "", String FileExtension = "")
