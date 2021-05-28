@@ -30,8 +30,24 @@ namespace uSource.Formats.Source.VTF
         {
             if (DefaultMaterial == null)
             {
+#if UNITY_EDITOR
+                //Try load asset from project (if exist)
+                if (uLoader.SaveAssetsToUnity)
+                {
+                    Material = DefaultMaterial = uResourceManager.LoadAsset<Material>(FileName, uResourceManager.MaterialsExtension[0], ".mat");
+                    if (Material != null)
+                        return;
+                }
+#endif
+
                 Material = DefaultMaterial = new Material(Shader.Find("Diffuse"));
                 Material.name = FileName;
+#if UNITY_EDITOR
+                if (uLoader.SaveAssetsToUnity)
+                {
+                    uResourceManager.SaveAsset(Material, FileName, uResourceManager.MaterialsExtension[0], ".mat");
+                }
+#endif
             }
         }
 
@@ -93,23 +109,40 @@ namespace uSource.Formats.Source.VTF
 
             HasAnimation = ContainsParma("animatedtexture") && GetParma("animatedtexturevar") == "$basetexture";
 
+#if UNITY_EDITOR
+            //Try load asset from project (if exist)
+            if (uLoader.SaveAssetsToUnity)
+            {
+                Material = uResourceManager.LoadAsset<Material>(FileName, uResourceManager.MaterialsExtension[0], ".mat");
+                if (Material != null)
+                    return;
+            }
+#endif
+
             Material = new Material(GetShader(includeVmt == null ? _Shader : includeVmt._Shader));
             Material.name = FileName;
             Material.color = GetColor();
 
             if (ContainsParma("$basetexture"))
             {
-                Material.mainTexture = uResourceManager.LoadTexture(GetParma("$basetexture"))[0, 0];
+                String TextureName = GetParma("$basetexture");
+                Material.mainTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
             }
 
             //if (Material.mainTexture == null && ContainsParma("$bumpmap"))
             //    Material.mainTexture = ResourceManager.LoadTexture(GetParma("$bumpmap"))[0];
 
             if (Material.mainTexture == null && ContainsParma("$envmapmask"))
-                Material.mainTexture = uResourceManager.LoadTexture(GetParma("$envmapmask"))[0, 0];
+            {
+                String TextureName = GetParma("$envmapmask");
+                Material.mainTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
+            }
 
             if (ContainsParma("$basetexture2"))
-                Material.SetTexture("_BlendTex", uResourceManager.LoadTexture(GetParma("$basetexture2"))[0, 0]);
+            {
+                if(Material.HasProperty("_BlendTex"))
+                    Material.SetTexture("_BlendTex", uResourceManager.LoadTexture(GetParma("$basetexture2"))[0, 0]);
+            }
 
             //Base props
 
@@ -176,6 +209,13 @@ namespace uSource.Formats.Source.VTF
                 if (Material.HasProperty("_BumpMap"))
                     Material.SetTexture("_BumpMap", uResourceManager.LoadTexture(GetParma("$bumpmap"))[0, 0]);
             }
+
+#if UNITY_EDITOR
+            /*if (uLoader.SaveAssetsToUnity)
+            {
+                uResourceManager.SaveAsset(Material, FileName, uResourceManager.MaterialsExtension[0], ".mat");
+            }*/
+#endif
 
             //if (ContainsParma("$surfaceprop"))
             //    Material.name = Items["$surfaceprop"];

@@ -19,6 +19,9 @@ namespace uSource.Formats.Source.VTF
 
         public Texture2D[,] Frames { get; set; }
 
+        public UInt16 Width;
+        public UInt16 Height;
+
         //http://wiki.xentax.com/index.php/Source_VTF
         /// <summary>
         /// Parser VTF format
@@ -31,7 +34,7 @@ namespace uSource.Formats.Source.VTF
             using (uReader FileStream = new uReader(stream))
             {
                 String TempHeader = FileStream.ReadFixedLengthString(Encoding.ASCII, 4);
-                if (TempHeader != VTFHeader) 
+                if (TempHeader != VTFHeader)
                     throw new Exception("Invalid VTF header. Expected '" + VTFHeader + "', got '" + TempHeader + "'.");
 
                 Header = new VTFHeader();
@@ -42,10 +45,10 @@ namespace uSource.Formats.Source.VTF
                 Header.Version = Version;
 
                 UInt32 headerSize = FileStream.ReadUInt32();
-                UInt16 Width = FileStream.ReadUInt16();
-                UInt16 Height = FileStream.ReadUInt16();
+                Width = FileStream.ReadUInt16();
+                Height = FileStream.ReadUInt16();
 
-                Header.Flags = (VTFImageFlag) FileStream.ReadUInt32();
+                Header.Flags = (VTFImageFlag)FileStream.ReadUInt32();
 
                 UInt16 NumFrames = FileStream.ReadUInt16();
                 UInt16 FirstFrame = FileStream.ReadUInt16();
@@ -58,9 +61,9 @@ namespace uSource.Formats.Source.VTF
 
                 Header.BumpmapScale = FileStream.ReadSingle();
 
-                VTFImageFormat HighResImageFormat = (VTFImageFormat) FileStream.ReadUInt32();
+                VTFImageFormat HighResImageFormat = (VTFImageFormat)FileStream.ReadUInt32();
                 Byte MipmapCount = FileStream.ReadByte();
-                VTFImageFormat LowResImageFormat = (VTFImageFormat) FileStream.ReadUInt32();
+                VTFImageFormat LowResImageFormat = (VTFImageFormat)FileStream.ReadUInt32();
                 Byte LowResWidth = FileStream.ReadByte();
                 Byte LowResHeight = FileStream.ReadByte();
 
@@ -95,7 +98,7 @@ namespace uSource.Formats.Source.VTF
                 Resources = new VTFResource[NumResources];
                 for (Int32 i = 0; i < NumResources; i++)
                 {
-                    VTFResourceType type = (VTFResourceType) FileStream.ReadUInt32();
+                    VTFResourceType type = (VTFResourceType)FileStream.ReadUInt32();
                     UInt32 DataSize = FileStream.ReadUInt32();
                     switch (type)
                     {
@@ -120,7 +123,7 @@ namespace uSource.Formats.Source.VTF
                             };
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException(nameof(type), (uint) type, "Unknown resource type");
+                            throw new ArgumentOutOfRangeException(nameof(type), (uint)type, "Unknown resource type");
                     }
                 }
 
@@ -135,6 +138,33 @@ namespace uSource.Formats.Source.VTF
                         Height = LowResHeight,
                         Data = FileStream.ReadBytes(thumbSize)
                     };
+                }
+
+                Boolean ConvertToBGRA32 = true;
+                switch (HighResImageFormat)
+                {
+                    //Unity support this formats natively
+                    case VTFImageFormat.IMAGE_FORMAT_A8:
+                    case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
+                    case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
+                    case VTFImageFormat.IMAGE_FORMAT_BGR565:
+                    case VTFImageFormat.IMAGE_FORMAT_RGB565:
+                    case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT1:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT3:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT5:
+                    case VTFImageFormat.IMAGE_FORMAT_RGB888:
+                    //case VtfImageFormat.Rgb888Bluescreen:
+                    //case VtfImageFormat.Bgr888:
+                    //case VtfImageFormat.Bgr888Bluescreen:
+                    case VTFImageFormat.IMAGE_FORMAT_RGBA8888:
+                    case VTFImageFormat.IMAGE_FORMAT_BGRA8888:
+                    case VTFImageFormat.IMAGE_FORMAT_BGRX8888:
+                    case VTFImageFormat.IMAGE_FORMAT_RGBA16161616F:
+                    case VTFImageFormat.IMAGE_FORMAT_RGBA16161616:
+                        ConvertToBGRA32 = false;
+                        break;
                 }
 
                 FileStream.BaseStream.Position = DataOffset;
@@ -155,40 +185,66 @@ namespace uSource.Formats.Source.VTF
                                 Int32 Hei = GetMipSize(Height, MipLevel);
                                 Int32 DataSize = HighResFormatInfo.GetSize(Wid, Hei);
 
-                                switch (HighResImageFormat)
-                                {
-                                    //Unity support natively this formats
-                                    //TODO: add compression for unsupported formats by platform?
-                                    case VTFImageFormat.IMAGE_FORMAT_A8:
-                                    case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
-                                    case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
-                                    case VTFImageFormat.IMAGE_FORMAT_BGR565:
-                                    case VTFImageFormat.IMAGE_FORMAT_RGB565:
-                                    case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
-                                    case VTFImageFormat.IMAGE_FORMAT_DXT1:
-                                    case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
-                                    case VTFImageFormat.IMAGE_FORMAT_DXT3:
-                                    case VTFImageFormat.IMAGE_FORMAT_DXT5:
-                                    case VTFImageFormat.IMAGE_FORMAT_RGB888:
-                                    //case VtfImageFormat.Rgb888Bluescreen:
-                                    //case VtfImageFormat.Bgr888:
-                                    //case VtfImageFormat.Bgr888Bluescreen:
-                                    case VTFImageFormat.IMAGE_FORMAT_RGBA8888:
-                                    case VTFImageFormat.IMAGE_FORMAT_BGRA8888:
-                                    case VTFImageFormat.IMAGE_FORMAT_BGRX8888:
-                                    case VTFImageFormat.IMAGE_FORMAT_RGBA16161616F:
-                                    case VTFImageFormat.IMAGE_FORMAT_RGBA16161616:
-                                        FramesData[FrameID].InsertRange(0, FileStream.ReadBytes(DataSize));
-                                        break;
-
-                                    //Else convert to bgra c:
-                                    default:
-                                        FramesData[FrameID].InsertRange(0, VTFImageFormatInfo.FromFormat(HighResImageFormat).ConvertToBgra32(FileStream.ReadBytes(DataSize), Wid, Hei));
-                                        break;
-                                }
+                                if(ConvertToBGRA32)
+                                    FramesData[FrameID].InsertRange(0, VTFImageFormatInfo.FromFormat(HighResImageFormat).ConvertToBgra32(FileStream.ReadBytes(DataSize), Wid, Hei));
+                                else
+                                    FramesData[FrameID].InsertRange(0, FileStream.ReadBytes(DataSize));
                             }
                         }
                     }
+                }
+
+                TextureFormat InternalFormat = TextureFormat.BGRA32;
+                Boolean needCompress = false;
+                switch (HighResImageFormat)
+                {
+                    case VTFImageFormat.IMAGE_FORMAT_A8:
+                        InternalFormat = TextureFormat.Alpha8;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
+                    case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
+                        InternalFormat = TextureFormat.ARGB32;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_BGR565:
+                    case VTFImageFormat.IMAGE_FORMAT_RGB565:
+                        InternalFormat = TextureFormat.RGB565;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
+                        InternalFormat = TextureFormat.RGBA4444;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_DXT1:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
+                        InternalFormat = TextureFormat.DXT1;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_DXT3:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT5:
+                        InternalFormat = TextureFormat.DXT5;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_RGB888:
+                        //case VtfImageFormat.Rgb888Bluescreen:
+                        //case VtfImageFormat.Bgr888:
+                        //case VtfImageFormat.Bgr888Bluescreen:
+                        InternalFormat = TextureFormat.RGB24;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_RGBA8888:
+                        InternalFormat = TextureFormat.RGBA32;
+                        break;
+
+                    case VTFImageFormat.IMAGE_FORMAT_RGBA16161616F:
+                    case VTFImageFormat.IMAGE_FORMAT_RGBA16161616:
+                        InternalFormat = TextureFormat.RGBAHalf;
+                        break;
+
+                    default:
+                        //needCompress = true;
+                        break;
                 }
 
                 Boolean mipmaps = MipmapCount > 1;
@@ -196,59 +252,6 @@ namespace uSource.Formats.Source.VTF
                 {
                     for (Int32 FaceID = 0; FaceID < NumFaces; FaceID++)
                     {
-                        Boolean needCompress = false;
-                        TextureFormat InternalFormat = TextureFormat.BGRA32;
-                        switch (HighResImageFormat)
-                        {
-                            case VTFImageFormat.IMAGE_FORMAT_A8:
-                                InternalFormat = TextureFormat.Alpha8;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
-                            case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
-                                InternalFormat = TextureFormat.ARGB32;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_BGR565:
-                            case VTFImageFormat.IMAGE_FORMAT_RGB565:
-                                InternalFormat = TextureFormat.RGB565;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
-                                InternalFormat = TextureFormat.RGBA4444;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_DXT1:
-                            case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
-                                InternalFormat = TextureFormat.DXT1;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_DXT3:
-                            case VTFImageFormat.IMAGE_FORMAT_DXT5:
-                                InternalFormat = TextureFormat.DXT5;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_RGB888:
-                                //case VtfImageFormat.Rgb888Bluescreen:
-                                //case VtfImageFormat.Bgr888:
-                                //case VtfImageFormat.Bgr888Bluescreen:
-                                InternalFormat = TextureFormat.RGB24;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_RGBA8888:
-                                InternalFormat = TextureFormat.RGBA32;
-                                break;
-
-                            case VTFImageFormat.IMAGE_FORMAT_RGBA16161616F:
-                            case VTFImageFormat.IMAGE_FORMAT_RGBA16161616:
-                                InternalFormat = TextureFormat.RGBAHalf;
-                                break;
-
-                            default:
-                                //needCompress = true;
-                                break;
-                        }
-
                         Frames[FrameID, FaceID] = new Texture2D(Width, Height, InternalFormat, mipmaps);
                         Frames[FrameID, FaceID].name = FileName;
                         Frames[FrameID, FaceID].LoadRawTextureData(FramesData[FrameID].ToArray());

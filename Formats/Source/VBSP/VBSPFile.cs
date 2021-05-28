@@ -224,16 +224,18 @@ namespace uSource.Formats.Source.VBSP
                     if (pLight.type == emittype_t.emit_skylight)
                         uLight.type = LightType.Directional;
 
-                    uLight.shadows = LightShadows.Soft;
-                    if (uLight.type == LightType.Directional)
+                    if (uLoader.UseDynamicLight)
                     {
-                        uLight.intensity *= uLoader.LightEnvironmentScale;
-                        LightEnvironment = uLight.transform;
-                        uLight.shadowBias = 0.1f;
-                        uLight.shadowNormalBias = 0;
+                        uLight.shadows = LightShadows.Soft;
+                        uLight.shadowBias = 0.05f;
+                        if (uLight.type == LightType.Directional)
+                        {
+                            uLight.intensity *= uLoader.LightEnvironmentScale;
+                            LightEnvironment = uLight.transform;
+                            uLight.shadowCustomResolution = uLoader.CustomCascadedShadowResolution;
+                            uLight.shadowNormalBias = 0;
+                        }
                     }
-                    else
-                        uLight.shadowBias = 0.01f;
 
                     if (pLight.type == emittype_t.emit_spotlight || pLight.type == emittype_t.emit_point || pLight.type == emittype_t.emit_surface)
                     {
@@ -428,6 +430,10 @@ namespace uSource.Formats.Source.VBSP
                 {
                     Single TextureUVS = (Vector3.Dot(FaceVertices[i], tS) + CTexinfo.TextureVecs[0].w * uLoader.UnitScale) / (CTexdata.View_Width * uLoader.UnitScale);
                     Single TextureUVT = (Vector3.Dot(FaceVertices[i], tT) + CTexinfo.TextureVecs[1].w * uLoader.UnitScale) / (CTexdata.View_Height * uLoader.UnitScale);
+
+                    if (uLoader.SaveAssetsToUnity && uLoader.ExportTextureAsPNG)
+                        TextureUVT = -TextureUVT;
+
                     TextureUV[i] = new Vector2(TextureUVS, TextureUVT);
                 }
 
@@ -1085,6 +1091,7 @@ namespace uSource.Formats.Source.VBSP
 
         static void CreateSkybox(List<String> data)
         {
+            Material Material;
             String Base = "skybox/" + data[data.FindIndex(n => n == "skyname") + 1];
             //String LDR = Base;//.Replace("_hdr", "");
 
@@ -1092,28 +1099,50 @@ namespace uSource.Formats.Source.VBSP
             if (HDRIndex != -1)
                 Base.Remove(HDRIndex, 4);
 
+            String FileName = null;
+#if UNITY_EDITOR
+            //Try load material from project (if exist)
+            if (uLoader.SaveAssetsToUnity)
+            {
+                FileName = uResourceManager.NormalizePath(Base, uResourceManager.MaterialsSubFolder, uResourceManager.MaterialsExtension[0]);
+                RenderSettings.skybox = Material = uResourceManager.LoadAsset<Material>(FileName, uResourceManager.MaterialsExtension[0], ".mat");
+                if (Material != null)
+                    return;
+            }
+#endif
+
             String BaseUP = Base + "up";
             String[] Sides = new[] { "_FrontTex", "_BackTex", "_LeftTex", "_RightTex", "_UpTex", "_DownTex" };
-            Material Material = new Material(Shader.Find("Mobile/Skybox"));
+            Material = new Material(Shader.Find("Mobile/Skybox"));
+            Material.name = Base;
 
             //Invert
             for (int i = 0; i < 5; i++)
             {
-                Material.SetTextureScale(Sides[i], new Vector2(1, -1));
-                Material.SetTextureOffset(Sides[i], new Vector2(0, 1));
+                Vector2 TexScale = new Vector2(1, -1);
+                Vector2 TexOffset = new Vector2(0, 1);
+
+                if (uLoader.SaveAssetsToUnity && uLoader.ExportTextureAsPNG)
+                {
+                    TexScale.y = 1;
+                    TexOffset.y = 0;
+                }
+
+                Material.SetTextureScale(Sides[i], TexScale);
+                Material.SetTextureOffset(Sides[i], TexOffset);
             }
 
-            Texture _FrontTex = uResourceManager.LoadTexture(Base + "rt", BaseUP)[0, 0];
+            Texture _FrontTex = uResourceManager.LoadTexture(Base + "rt", BaseUP, true)[0, 0];
             _FrontTex.wrapMode = TextureWrapMode.Clamp;
-            Texture _BackTex = uResourceManager.LoadTexture(Base + "lf", BaseUP)[0, 0];
+            Texture _BackTex = uResourceManager.LoadTexture(Base + "lf", BaseUP, true)[0, 0];
             _BackTex.wrapMode = TextureWrapMode.Clamp;
-            Texture _LeftTex = uResourceManager.LoadTexture(Base + "ft", BaseUP)[0, 0];
+            Texture _LeftTex = uResourceManager.LoadTexture(Base + "ft", BaseUP, true)[0, 0];
             _LeftTex.wrapMode = TextureWrapMode.Clamp;
-            Texture _RightTex = uResourceManager.LoadTexture(Base + "bk", BaseUP)[0, 0];
+            Texture _RightTex = uResourceManager.LoadTexture(Base + "bk", BaseUP, true)[0, 0];
             _RightTex.wrapMode = TextureWrapMode.Clamp;
-            Texture _UpTex = uResourceManager.LoadTexture(BaseUP)[0, 0];
+            Texture _UpTex = uResourceManager.LoadTexture(BaseUP, ImmediatelyConvert: true)[0, 0];
             _UpTex.wrapMode = TextureWrapMode.Clamp;
-            Texture _DownTex = uResourceManager.LoadTexture(Base + "dn", BaseUP)[0, 0];
+            Texture _DownTex = uResourceManager.LoadTexture(Base + "dn", BaseUP, true)[0, 0];
             _DownTex.wrapMode = TextureWrapMode.Clamp;
 
             Material.SetTexture(Sides[0], _FrontTex);
@@ -1124,6 +1153,12 @@ namespace uSource.Formats.Source.VBSP
             Material.SetTexture(Sides[5], _DownTex);
 
             RenderSettings.skybox = Material;
+
+#if UNITY_EDITOR
+            //Save skybox material to project (if enabled)
+            if (uLoader.SaveAssetsToUnity)
+                uResourceManager.SaveAsset(Material, FileName, uResourceManager.MaterialsExtension[0], ".mat");
+#endif
         }
 
         static void InitPAKLump()

@@ -415,7 +415,12 @@ namespace uSource.Formats.Source.MDL
                             {
                                 pVertices[i] = MathLibrary.SwapZY(Vertexes[i].m_vecPosition * uLoader.UnitScale);
                                 pNormals[i] = MathLibrary.SwapZY(Vertexes[i].m_vecNormal);
-                                pUvBuffer[i] = Vertexes[i].m_vecTexCoord;
+
+                                Vector2 UV = Vertexes[i].m_vecTexCoord;
+                                if (uLoader.SaveAssetsToUnity && uLoader.ExportTextureAsPNG)
+                                    UV.y = -UV.y;
+
+                                pUvBuffer[i] = UV;
                                 pBoneWeight[i] = GetBoneWeight(Vertexes[i].m_BoneWeights);
                             }
 

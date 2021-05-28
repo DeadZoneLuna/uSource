@@ -61,12 +61,23 @@ namespace uSource
             uLoader.RootPath = EditorGUILayout.TextField("Root path:", uLoader.RootPath);
             uLoader.ModFolders[0] = EditorGUILayout.TextField("Mod Name:", uLoader.ModFolders[0]);
             uLoader.UnitScale = EditorGUILayout.FloatField("Unit scale:", uLoader.UnitScale);
-            uLoader.SaveAssetsToUnity = EditorGUILayout.Toggle("Save loaded assets to Unity", uLoader.SaveAssetsToUnity);
-            uLoader.LoadAnims = EditorGUILayout.Toggle("Load animations (Beta)", uLoader.LoadAnims);
-            uLoader.ClearDirectoryCache = EditorGUILayout.Toggle("Clear directory cache", uLoader.ClearDirectoryCache);
-            uLoader.ClearModelCache = EditorGUILayout.Toggle("Clear model cache", uLoader.ClearModelCache);
-            uLoader.ClearMaterialCache = EditorGUILayout.Toggle("Clear material cache", uLoader.ClearMaterialCache);
-            uLoader.ClearTextureCache = EditorGUILayout.Toggle("Clear texture cache", uLoader.ClearTextureCache);
+
+            GUILayout.BeginVertical("helpbox");
+            GUILayout.Label("When resources loaded, they are stored in the scene.\n\nEnable this option, loaded resources will be saved to project\n& can edit them. (Textures and Materials at the moment)", EditorStyles.boldLabel);
+
+            uLoader.SaveAssetsToUnity = EditorGUILayout.ToggleLeft("(Save / Load) assets (to / from) project (Beta)", uLoader.SaveAssetsToUnity);
+            if (uLoader.SaveAssetsToUnity)
+            {
+                uLoader.ExportTextureAsPNG = EditorGUILayout.ToggleLeft("Convert textures as PNG (Editable format)", uLoader.ExportTextureAsPNG);
+            }
+
+            GUILayout.EndVertical();
+
+            uLoader.LoadAnims = EditorGUILayout.ToggleLeft("Load animations (Beta)", uLoader.LoadAnims);
+            uLoader.ClearDirectoryCache = EditorGUILayout.ToggleLeft("Clear directory cache", uLoader.ClearDirectoryCache);
+            uLoader.ClearModelCache = EditorGUILayout.ToggleLeft("Clear model cache", uLoader.ClearModelCache);
+            uLoader.ClearMaterialCache = EditorGUILayout.ToggleLeft("Clear material cache", uLoader.ClearMaterialCache);
+            uLoader.ClearTextureCache = EditorGUILayout.ToggleLeft("Clear texture cache", uLoader.ClearTextureCache);
             GUILayout.EndVertical();
 
             GUILayout.Space(10);
@@ -75,14 +86,14 @@ namespace uSource
             GUILayout.BeginVertical("box");
             GUILayout.Label("BSP Import Settings", EditorStyles.boldLabel);
 
-            uLoader.ParseBSPPhysics = EditorGUILayout.Toggle("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
-            uLoader.Use3DSkybox = EditorGUILayout.Toggle("Use 3D Skybox", uLoader.Use3DSkybox);
-            uLoader.ParseDecals = EditorGUILayout.Toggle("Parse decals (Beta)", uLoader.ParseDecals);
-            uLoader.ParseLightmaps = EditorGUILayout.Toggle("Parse Lightmaps to Unity", uLoader.ParseLightmaps);
-            uLoader.UseGammaLighting = EditorGUILayout.Toggle("Use gamma color space", uLoader.UseGammaLighting);
-            uLoader.UseLightmapsAsTextureShader = EditorGUILayout.Toggle("Use shader for lightmaps", uLoader.UseLightmapsAsTextureShader);
+            uLoader.ParseBSPPhysics = EditorGUILayout.ToggleLeft("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
+            uLoader.Use3DSkybox = EditorGUILayout.ToggleLeft("Use 3D Skybox", uLoader.Use3DSkybox);
+            uLoader.ParseDecals = EditorGUILayout.ToggleLeft("Parse decals (Beta)", uLoader.ParseDecals);
+            uLoader.ParseLightmaps = EditorGUILayout.ToggleLeft("Parse Lightmaps to Unity", uLoader.ParseLightmaps);
+            uLoader.UseGammaLighting = EditorGUILayout.ToggleLeft("Use gamma color space", uLoader.UseGammaLighting);
+            uLoader.UseLightmapsAsTextureShader = EditorGUILayout.ToggleLeft("Use shader for lightmaps", uLoader.UseLightmapsAsTextureShader);
 
-            uLoader.ParseLights = EditorGUILayout.Toggle("Parse lights (Beta)", uLoader.ParseLights);
+            uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights (Beta)", uLoader.ParseLights);
             if (uLoader.ParseLights)
             {
                 GUILayout.BeginVertical("textfield");
@@ -92,7 +103,7 @@ namespace uSource
                 GUILayout.Label("BSP already have converted lights from entities to structure (WorldLights)\n!!!Recommend to use it!!!", EditorStyles.boldLabel);
                 GUILayout.EndVertical();
 
-                uLoader.UseWorldLights = EditorGUILayout.Toggle("Use world lights", uLoader.UseWorldLights);
+                uLoader.UseWorldLights = EditorGUILayout.ToggleLeft("Use world lights", uLoader.UseWorldLights);
 
                 if (uLoader.UseWorldLights)
                 {
@@ -110,11 +121,12 @@ namespace uSource
                 GUILayout.FlexibleSpace();
                 GUILayout.EndVertical();
 
-                uLoader.IgnoreShadowControl = EditorGUILayout.Toggle("Ignore shadow control", uLoader.IgnoreShadowControl);
-                uLoader.UseDynamicLight = EditorGUILayout.Toggle("Dynamic shadows", uLoader.UseDynamicLight);
+                uLoader.CustomCascadedShadowResolution = EditorGUILayout.IntSlider("Directional Shadow Map Size:", uLoader.CustomCascadedShadowResolution, 64, 8192);
+                uLoader.IgnoreShadowControl = EditorGUILayout.ToggleLeft("Ignore shadow control", uLoader.IgnoreShadowControl);
+                uLoader.UseDynamicLight = EditorGUILayout.ToggleLeft("Dynamic shadows", uLoader.UseDynamicLight);
             }
 
-            uLoader.DebugEntities = EditorGUILayout.Toggle("Debug entities", uLoader.DebugEntities);
+            uLoader.DebugEntities = EditorGUILayout.ToggleLeft("Debug entities", uLoader.DebugEntities);
             uLoader.MapName = EditorGUILayout.TextField("Map Name:", uLoader.MapName);
             if (GUILayout.Button("Load BSP"))
             {
@@ -139,20 +151,21 @@ namespace uSource
             GUILayout.BeginVertical("box");
             GUILayout.Label("MDL Import Settings", EditorStyles.boldLabel);
 
-            uLoader.UseStaticPropFlag = EditorGUILayout.Toggle("Load static bones", uLoader.UseStaticPropFlag);
+            uLoader.UseStaticPropFlag = EditorGUILayout.ToggleLeft("Load static bones", uLoader.UseStaticPropFlag);
             GUILayout.BeginVertical("helpbox");
             uLoader.ModelsLightmapSize = EditorGUILayout.FloatField("Lightmap scale factor", uLoader.ModelsLightmapSize);
             GUILayout.Label("Used to scale lightmap on models (editor & rebake only)", EditorStyles.miniBoldLabel);
             GUILayout.EndVertical();
 
-            uLoader.UseHitboxesOnModel = EditorGUILayout.Toggle("Load hitboxes model", uLoader.UseHitboxesOnModel);
-            uLoader.DrawArmature = EditorGUILayout.Toggle("Debug skeleton / bones", uLoader.DrawArmature);
+            uLoader.UseHitboxesOnModel = EditorGUILayout.ToggleLeft("Load hitboxes model", uLoader.UseHitboxesOnModel);
+            uLoader.DrawArmature = EditorGUILayout.ToggleLeft("Debug skeleton / bones", uLoader.DrawArmature);
             uLoader.ModelPath = EditorGUILayout.TextField("Model:", uLoader.ModelPath);
             if (GUILayout.Button("Load StudioModel"))
             {
                 uLoader.Clear();
                 uResourceManager.Init();
                 uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                uResourceManager.ExportFromCache();
                 uResourceManager.CloseStreams();
             }
 
@@ -163,6 +176,7 @@ namespace uSource
                 uResourceManager.Init();
                 var mainMDL = uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
                 var subMDL = uResourceManager.LoadModel(uLoader.SubModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                uResourceManager.ExportFromCache();
                 uResourceManager.CloseStreams();
 
                 foreach (SkinnedMeshRenderer SkinnedMesh in subMDL.GetComponentsInChildren<SkinnedMeshRenderer>())
@@ -178,6 +192,7 @@ namespace uSource
                 {
                     uResourceManager.LoadModel(uLoader.ModelsTest[i], uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
                 }
+                uResourceManager.ExportFromCache();
                 uResourceManager.CloseStreams();
             }
 
@@ -254,7 +269,8 @@ namespace uSource
         };
 
         public static Single UnitScale = 0.0254f;
-        public static Boolean SaveAssetsToUnity = false; // - TODO
+        public static Boolean SaveAssetsToUnity = false;
+        public static Boolean ExportTextureAsPNG = true;
         public static Boolean LoadAnims = false;
         public static Boolean ClearDirectoryCache = false;
         public static Boolean ClearModelCache = true;
@@ -276,6 +292,7 @@ namespace uSource
         public static Boolean UseWorldLights = true;
         public static Single QuadraticIntensityFixer = 1;
         public static Single LightEnvironmentScale = 4;
+        public static Int32 CustomCascadedShadowResolution = 8192;
         public static Boolean IgnoreShadowControl = false;
         public static Boolean UseDynamicLight = true;
         public static Boolean DebugEntities = true;
@@ -341,6 +358,9 @@ namespace uSource
 
         public static void Clear()
         {
+            if (uResourceManager.ProjectPath != null)
+                uResourceManager.ProjectPath = null;
+
             if(uResourceManager._providers != null)
             {
                 uResourceManager.CloseStreams();
@@ -361,6 +381,9 @@ namespace uSource
 
             if (uResourceManager.MaterialCache != null && ClearMaterialCache)
                 uResourceManager.MaterialCache.Clear();
+
+            if (uResourceManager.TexExportCache != null)
+                uResourceManager.TexExportCache.Clear();
 
             if (uResourceManager.TextureCache != null && ClearTextureCache)
                 uResourceManager.TextureCache.Clear();
