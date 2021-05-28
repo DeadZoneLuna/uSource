@@ -6,20 +6,20 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 # Supported formats (1.0 Beta Unstable):
 
 ## Source
-| Format | Type of content                    | Import             | Export to Unity |
-| ------ | ------                             | ------             | ------          |
-| .MDL   | Studio Models                      | :heavy_check_mark: | :x:             |
-| .VCD   | Choreography Scenes (scenes.image) | In the future      | :x:             |
-| .BSP   | Map Files (Compiled)               | :heavy_check_mark: | :x:             |
-| .VMF   | Map Files (Hammer format)          | In the future      | :x:             |
-| .VPK   | Valve Packages                     | :heavy_check_mark: | :x:             |
-| .GCF   | Grid Cache Files                   | In the future      | :x:             |
-| .NCF   | No Cache Files                     | In the future      | :x:             |
-| .DMX   | Datamodels                         | :x:                | :x:             |
-| .PCF   | Particles                          | :x:                | :x:             |
-| .DMX   | SFM Sessions                       | :x:                | :x:             |
-| .VTF   | Textures                           | :heavy_check_mark: | :x:             |
-| .VMT   | Materials                          | :heavy_check_mark: | :x:             |
+| Format | Type of content                    | Import             | Export to Unity    |
+| ------ | ------                             | ------             | ------             |
+| .MDL   | Studio Models                      | :heavy_check_mark: | :x:                |
+| .VCD   | Choreography Scenes (scenes.image) | In the future      | :x:                |
+| .BSP   | Map Files (Compiled)               | :heavy_check_mark: | :x:                |
+| .VMF   | Map Files (Hammer format)          | In the future      | :x:                |
+| .VPK   | Valve Packages                     | :heavy_check_mark: | :x:                |
+| .GCF   | Grid Cache Files                   | In the future      | :x:                |
+| .NCF   | No Cache Files                     | In the future      | :x:                |
+| .DMX   | Datamodels                         | :x:                | :x:                |
+| .PCF   | Particles                          | :x:                | :x:                |
+| .DMX   | SFM Sessions                       | :x:                | :x:                |
+| .VTF   | Textures                           | :heavy_check_mark: | :heavy_check_mark: |
+| .VMT   | Materials                          | :heavy_check_mark: | :heavy_check_mark: |
 
 ## GoldSource
 | Format            | Type of content   | Import            | Export to Unity   |
