@@ -466,7 +466,10 @@ namespace uSource
 
 #if UNITY_EDITOR
             if (uLoader.SaveAssetsToUnity && !ImmediatelyConvert)
-                TexExportCache.Add(new String[,] { { ExportData[0, 0].Replace(MaterialsExtension[0], ""), ExportData[0, 1], TempPath } });
+            {
+                if (ExportData != null)
+                    TexExportCache.Add(new String[,] { { ExportData[0, 0].Replace(MaterialsExtension[0], ""), ExportData[0, 1], TempPath } });
+            }
 #endif
 
             if (TextureCache.ContainsKey(TempPath))
