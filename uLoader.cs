@@ -68,10 +68,44 @@ namespace uSource
             uLoader.SaveAssetsToUnity = EditorGUILayout.ToggleLeft("(Save / Load) assets (to / from) project (Beta)", uLoader.SaveAssetsToUnity);
             if (uLoader.SaveAssetsToUnity)
             {
+                uLoader.OutputAssetsFolder = EditorGUILayout.TextField("Output path: ", uLoader.OutputAssetsFolder);
                 uLoader.ExportTextureAsPNG = EditorGUILayout.ToggleLeft("Convert textures as PNG (Editable format)", uLoader.ExportTextureAsPNG);
             }
 
             GUILayout.EndVertical();
+
+            #region Lightmap settings
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Lightmap Settings", EditorStyles.boldLabel);
+
+            uLoader.ParseLightmaps = EditorGUILayout.ToggleLeft("Parse original lightmaps (BSP)", uLoader.ParseLightmaps);
+            if (uLoader.ParseLightmaps)
+            {
+                uLoader.UseGammaLighting = EditorGUILayout.ToggleLeft("Use gamma color space on lightmaps", uLoader.UseGammaLighting);
+                uLoader.UseLightmapsAsTextureShader = EditorGUILayout.ToggleLeft("Set lightmap texture on material", uLoader.UseLightmapsAsTextureShader);
+            }
+
+            GUILayout.Space(5);
+
+            uLoader.GenerateUV2StaticProps = EditorGUILayout.ToggleLeft("Generate UV2 (Lightmaps) for static props", uLoader.GenerateUV2StaticProps);
+            if (uLoader.GenerateUV2StaticProps)
+            {
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("Static Props (Models)", EditorStyles.boldLabel);
+
+                GUILayout.BeginVertical("helpbox");
+                uLoader.ModelsLightmapSize = EditorGUILayout.FloatField("Lightmap scale factor", uLoader.ModelsLightmapSize);
+                GUILayout.Label("Used to scale lightmap on models (editor & rebake only)", EditorStyles.miniBoldLabel);
+                GUILayout.EndVertical();
+
+                uLoader.UV2HardAngleProps = EditorGUILayout.IntSlider("Hard Angle: ", uLoader.UV2HardAngleProps, 0, 180);
+                uLoader.UV2PackMarginProps = EditorGUILayout.IntSlider("Pack Margin: ", uLoader.UV2PackMarginProps, 1, 64);
+                uLoader.UV2AngleErrorProps = EditorGUILayout.IntSlider("Angle Error: ", uLoader.UV2AngleErrorProps, 1, 75);
+                uLoader.UV2AreaErrorProps = EditorGUILayout.IntSlider("Area Error: ", uLoader.UV2AreaErrorProps, 1, 75);
+                GUILayout.EndVertical();
+            }
+            GUILayout.EndVertical();
+            #endregion
 
             uLoader.LoadAnims = EditorGUILayout.ToggleLeft("Load animations (Beta)", uLoader.LoadAnims);
             uLoader.ClearDirectoryCache = EditorGUILayout.ToggleLeft("Clear directory cache", uLoader.ClearDirectoryCache);
@@ -89,9 +123,6 @@ namespace uSource
             uLoader.ParseBSPPhysics = EditorGUILayout.ToggleLeft("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
             uLoader.Use3DSkybox = EditorGUILayout.ToggleLeft("Use 3D Skybox", uLoader.Use3DSkybox);
             uLoader.ParseDecals = EditorGUILayout.ToggleLeft("Parse decals (Beta)", uLoader.ParseDecals);
-            uLoader.ParseLightmaps = EditorGUILayout.ToggleLeft("Parse Lightmaps to Unity", uLoader.ParseLightmaps);
-            uLoader.UseGammaLighting = EditorGUILayout.ToggleLeft("Use gamma color space", uLoader.UseGammaLighting);
-            uLoader.UseLightmapsAsTextureShader = EditorGUILayout.ToggleLeft("Use shader for lightmaps", uLoader.UseLightmapsAsTextureShader);
 
             uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights (Beta)", uLoader.ParseLights);
             if (uLoader.ParseLights)
@@ -152,11 +183,6 @@ namespace uSource
             GUILayout.Label("MDL Import Settings", EditorStyles.boldLabel);
 
             uLoader.UseStaticPropFlag = EditorGUILayout.ToggleLeft("Load static bones", uLoader.UseStaticPropFlag);
-            GUILayout.BeginVertical("helpbox");
-            uLoader.ModelsLightmapSize = EditorGUILayout.FloatField("Lightmap scale factor", uLoader.ModelsLightmapSize);
-            GUILayout.Label("Used to scale lightmap on models (editor & rebake only)", EditorStyles.miniBoldLabel);
-            GUILayout.EndVertical();
-
             uLoader.UseHitboxesOnModel = EditorGUILayout.ToggleLeft("Load hitboxes model", uLoader.UseHitboxesOnModel);
             uLoader.DrawArmature = EditorGUILayout.ToggleLeft("Debug skeleton / bones", uLoader.DrawArmature);
             uLoader.ModelPath = EditorGUILayout.TextField("Model:", uLoader.ModelPath);
@@ -270,7 +296,17 @@ namespace uSource
 
         public static Single UnitScale = 0.0254f;
         public static Boolean SaveAssetsToUnity = false;
+        public static String OutputAssetsFolder = "uSource";
         public static Boolean ExportTextureAsPNG = true;
+        #region Lightmap Settings
+        public static Boolean GenerateUV2StaticProps = true;
+        public static Boolean ParseLightmaps = false;
+        public static Single ModelsLightmapSize = 0.001f;
+        public static Int32 UV2HardAngleProps = 88;
+        public static Int32 UV2PackMarginProps = 4;
+        public static Int32 UV2AngleErrorProps = 8;
+        public static Int32 UV2AreaErrorProps = 15;
+        #endregion
         public static Boolean LoadAnims = false;
         public static Boolean ClearDirectoryCache = false;
         public static Boolean ClearModelCache = true;
@@ -285,7 +321,6 @@ namespace uSource
         public static Boolean ParseBSPPhysics = false;
         public static Boolean Use3DSkybox = false;
         public static Boolean ParseDecals = false;
-        public static Boolean ParseLightmaps = false;
         public static Boolean UseGammaLighting = true;
         public static Boolean UseLightmapsAsTextureShader = false;
         public static Boolean ParseLights = true;
@@ -317,7 +352,6 @@ namespace uSource
         public static String ModelPath = @"weapons/v_rif_ak47";
         public static String SubModelPath = @"weapons/ct_arms";
         public static Boolean UseStaticPropFlag = false;
-        public static Single ModelsLightmapSize = 0f;
         public static Boolean UseHitboxesOnModel = false;
         public static Boolean DrawArmature = false;
 
@@ -358,8 +392,10 @@ namespace uSource
 
         public static void Clear()
         {
+#if UNITY_EDITOR
             if (uResourceManager.ProjectPath != null)
                 uResourceManager.ProjectPath = null;
+#endif
 
             if(uResourceManager._providers != null)
             {
@@ -382,8 +418,13 @@ namespace uSource
             if (uResourceManager.MaterialCache != null && ClearMaterialCache)
                 uResourceManager.MaterialCache.Clear();
 
+#if UNITY_EDITOR
+            if (uResourceManager.UV2GenerateCache != null)
+                uResourceManager.UV2GenerateCache.Clear();
+
             if (uResourceManager.TexExportCache != null)
                 uResourceManager.TexExportCache.Clear();
+#endif
 
             if (uResourceManager.TextureCache != null && ClearTextureCache)
                 uResourceManager.TextureCache.Clear();

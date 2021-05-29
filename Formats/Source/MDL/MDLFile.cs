@@ -314,7 +314,7 @@ namespace uSource.Formats.Source.MDL
         }
 
         public Boolean meshExist = true;
-        public Transform BuildModel()
+        public Transform BuildModel(Boolean GenerateUV2 = false)
         {
             GameObject ModelObject = new GameObject(MDL_Header.Name);
 
@@ -482,9 +482,15 @@ namespace uSource.Formats.Source.MDL
                             }
 
 #if UNITY_EDITOR
-                            UnityEditor.SerializedObject so = new UnityEditor.SerializedObject(Renderer);
-                            so.FindProperty("m_ScaleInLightmap").floatValue = uLoader.ModelsLightmapSize;
-                            so.ApplyModifiedProperties();
+                            if (GenerateUV2)
+                            {
+                                UnityEditor.SerializedObject so = new UnityEditor.SerializedObject(Renderer);
+                                so.FindProperty("m_ScaleInLightmap").floatValue = uLoader.ModelsLightmapSize;
+                                so.ApplyModifiedProperties();
+
+                                uResourceManager.UV2GenerateCache.Add(pMesh);
+                            }
+
 #endif
                             Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
                             Renderer.sharedMaterials = pMaterials;

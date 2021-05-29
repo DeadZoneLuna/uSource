@@ -549,6 +549,7 @@ namespace uSource.Formats.Source.VBSP
                     Mesh.SetTriangles(Triangles, 0);
                     Mesh.SetColors(Colors);
                     Mesh.SetUVs(0, UV);
+                    Mesh.name = MeshObject.name;
 
                     if (BSP_TextureStringData[i].Contains("TOOLS/"))
                     {
@@ -647,6 +648,7 @@ namespace uSource.Formats.Source.VBSP
                 Mesh.SetTriangles(Triangles, 0);
                 Mesh.SetColors(Colors);
                 Mesh.SetUVs(0, UV);
+                Mesh.name = MeshObject.name;
 
                 List<Vector2> UV2 = new List<Vector2>();
                 Texture2D Lightmap_tex = new Texture2D(1, 1);
@@ -1243,7 +1245,7 @@ namespace uSource.Formats.Source.VBSP
                         BSPFileReader.BaseStream.Seek(StaticPropStart + StaticPropSize, SeekOrigin.Begin);
 
                         Int64 CurrentPosition = BSPFileReader.BaseStream.Position;
-                        Transform MdlTransform = uResourceManager.LoadModel(StaticPropName, uLoader.LoadAnims);
+                        Transform MdlTransform = uResourceManager.LoadModel(StaticPropName, uLoader.LoadAnims, uLoader.UseHitboxesOnModel, uLoader.GenerateUV2StaticProps);
                         BSPFileReader.BaseStream.Position = CurrentPosition;
 
                         MdlTransform.position = m_Origin;

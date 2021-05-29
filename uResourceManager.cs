@@ -170,8 +170,10 @@ namespace uSource
 
     public class uResourceManager
     {
+#if UNITY_EDITOR
         public static bool RefreshAssets;
         public static String ProjectPath;
+#endif
 
         public static readonly List<IResourceProvider> _providers = new List<IResourceProvider>();
 
@@ -201,6 +203,12 @@ namespace uSource
         public static Dictionary<String, VMTFile> MaterialCache;
         public static Dictionary<String, Texture2D[,]> TextureCache;
 
+#if UNITY_EDITOR
+        public static String uSourceSavePath;
+        public static String TexExportType;
+        public static List<String[,]> TexExportCache;
+        public static List<Mesh> UV2GenerateCache;
+#endif
         public static void Init(Int32 StartIndex = 0, IResourceProvider mainProvider = null)
         {
             if (ModelCache == null)
@@ -209,26 +217,33 @@ namespace uSource
             if (MaterialCache == null)
                 MaterialCache = new Dictionary<String, VMTFile>();
 
-            if (TexExportCache == null)
-                TexExportCache = new List<String[,]>();
-
             if (TextureCache == null)
                 TextureCache = new Dictionary<String, Texture2D[,]>();
 
+#if UNITY_EDITOR
+            if (uLoader.GenerateUV2StaticProps)
+            {
+                if (UV2GenerateCache == null)
+                    UV2GenerateCache = new List<Mesh>();
+            }
+
             if (uLoader.SaveAssetsToUnity)
             {
-#if UNITY_EDITOR
+                if (TexExportCache == null)
+                    TexExportCache = new List<String[,]>();
+
                 RefreshAssets = !UnityEditor.EditorPrefs.GetBool("kAutoRefresh");
-#endif
 
                 if (ProjectPath == null)
                 {
                     ProjectPath = slashesRegex.Replace(Directory.GetCurrentDirectory(), "/");
-                    uSourceSavePath = slashesRegex.Replace("Assets/uSource/" + uLoader.ModFolders[0] + "/", "/");
+
+                    uSourceSavePath = slashesRegex.Replace("Assets/" + uLoader.OutputAssetsFolder + "/" + uLoader.ModFolders[0] + "/", "/");
                     TexExportType = uLoader.ExportTextureAsPNG ? ".png" : ".asset";
                     ProjectPath += "/" + uSourceSavePath;
                 }
             }
+#endif
 
             if (mainProvider != null)
             {
@@ -240,14 +255,12 @@ namespace uSource
                 Init(uLoader.RootPath, uLoader.ModFolders[FolderID], uLoader.DirPaks[FolderID]);
         }
 
-        public static String uSourceSavePath;
-        public static String TexExportType;
         public static void Init(String RootPath, String ModFolder, String[] DirPaks)
         {
             //UnityEngine.Profiling.Profiler.BeginSample("Init Manager");
 
             //Init root path with mods
-            String FullPath = slashesRegex.Replace(RootPath + "/" + ModFolder + "/", "/");//Path.Combine(RootPath, ModFolder + "/");
+            String FullPath = slashesRegex.Replace(RootPath + "/" + ModFolder + "/", "/");
 
             if (Directory.Exists(FullPath))
                 _providers.Add(new DirProvider(FullPath));
@@ -256,7 +269,7 @@ namespace uSource
             {
                 String vpkFile = DirPaks[pakID];
 
-                String dirPath = FullPath + vpkFile + ".vpk";//Path.Combine(RootPath, ModFolder + "/" + vpkFile + ".vpk");
+                String dirPath = FullPath + vpkFile + ".vpk";
 
                 if (File.Exists(dirPath))
                 {
@@ -340,7 +353,7 @@ namespace uSource
             }
         }
 
-        public static Transform LoadModel(String ModelPath, Boolean WithAnims = false, bool withHitboxes = false)
+        public static Transform LoadModel(String ModelPath, Boolean WithAnims = false, Boolean withHitboxes = false, Boolean GenerateUV2 = false)
         {
             String TempPath = NormalizePath(ModelPath, ModelsSubFolder, ModelsExtension[0], false);
 
@@ -393,7 +406,7 @@ namespace uSource
                     }
                 }
 
-                Model = MDLFile.BuildModel();
+                Model = MDLFile.BuildModel(GenerateUV2);
                 MDLFile = null;
                 VVDFile = null;
 
@@ -454,8 +467,6 @@ namespace uSource
             return VMTFile;
         }
 
-        public static List<String[,]> TexExportCache;
-        //public static Dictionary<String, String[,]> PNGCache;
         public static Texture2D[,] LoadTexture(String TexturePath, String AltTexture = null, Boolean ImmediatelyConvert = false, String[,] ExportData = null)
         {
             String TempPath;
@@ -515,33 +526,12 @@ namespace uSource
             }
 
 #if UNITY_EDITOR
-            if (uLoader.SaveAssetsToUnity)
+            if (uLoader.SaveAssetsToUnity && ImmediatelyConvert)
             {
                 if (uLoader.ExportTextureAsPNG)
-                {
-                    //Flip
-                    Texture2D TempTex = new Texture2D(VTFFile.Width, VTFFile.Height);
-                    Color[] PixelsCopy = VTFFile.Frames[0, 0].GetPixels();
-                    Color[] PixelsFlipped = new Color[PixelsCopy.Length];
-
-                    for (Int32 i = 0; i < VTFFile.Height; i++)
-                    {
-                        Array.Copy(PixelsCopy, i * VTFFile.Width, PixelsFlipped, (VTFFile.Height - i - 1) * VTFFile.Width, VTFFile.Width);
-                    }
-
-                    TempTex.SetPixels(PixelsFlipped);
-                    TempTex.Apply();
-                    VTFFile.Frames[0, 0] = TempTex;
-                    //Flip
-
-                    if (ImmediatelyConvert)
-                        VTFFile.Frames[0, 0] = SaveTexture(VTFFile.Frames[0, 0], FileName);
-                }
+                    VTFFile.Frames[0, 0] = SaveTexture(VTFFile.Frames[0, 0], FileName);
                 else
-                {
-                    if (ImmediatelyConvert)
-                        SaveAsset(VTFFile.Frames[0, 0], FileName, MaterialsExtension[1], ".asset");
-                }
+                    SaveAsset(VTFFile.Frames[0, 0], FileName, MaterialsExtension[1], ".asset");
             }
 #endif
 
@@ -582,13 +572,37 @@ namespace uSource
             return false;
         }
 
+        #region Export resources
         public static void ExportFromCache()
         {
 #if UNITY_EDITOR
+            Int32 CurrentFile = 0;
+            Int32 TotalFiles = 0;
+            if (uLoader.GenerateUV2StaticProps)
+            {
+                TotalFiles = UV2GenerateCache.Count;
+
+                UnityEditor.UnwrapParam UnwrapProps = new UnityEditor.UnwrapParam();
+
+                UnwrapProps.hardAngle = uLoader.UV2HardAngleProps;
+                UnwrapProps.packMargin = uLoader.UV2PackMarginProps;
+                UnwrapProps.angleError = uLoader.UV2AngleErrorProps;
+                UnwrapProps.areaError = uLoader.UV2AreaErrorProps;
+
+                foreach (Mesh Mesh in UV2GenerateCache)
+                {
+                    UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Generate UV2: {0}/{1}", CurrentFile, TotalFiles), "In Progress: " + Mesh.name, (float)CurrentFile / TotalFiles);
+                    CurrentFile++;
+                    UnityEditor.Unwrapping.GenerateSecondaryUVSet(Mesh, UnwrapProps);
+                }
+
+                UnityEditor.EditorUtility.ClearProgressBar();
+            }
+
             if (uLoader.SaveAssetsToUnity)
             {
-                Int32 CurrentFile = 0;
-                Int32 TotalFiles = MaterialCache.Count;
+                CurrentFile = 0;
+                TotalFiles = MaterialCache.Count;
                 foreach (var Material in MaterialCache)
                 {
                     UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Save Materials: {0}/{1}", CurrentFile, TotalFiles), Material.Key, (float)CurrentFile / TotalFiles);
@@ -695,11 +709,29 @@ namespace uSource
             if (UseReplace)
                 FilePath = FilePath.Replace(MaterialsExtension[1], ".png");
 
+            //Flip
+            Texture2D TempTex = new Texture2D(Texture.width, Texture.height);
+            Color[] PixelsCopy = Texture.GetPixels();
+            Color[] PixelsFlipped = new Color[PixelsCopy.Length];
+
+            for (Int32 i = 0; i < Texture.height; i++)
+            {
+                Array.Copy(PixelsCopy, i * Texture.width, PixelsFlipped, (Texture.height - i - 1) * Texture.width, Texture.width);
+            }
+
+            TempTex.SetPixels(PixelsFlipped);
+            TempTex.Apply();
+            UnityEngine.Object.DestroyImmediate(Texture);
+            Texture = TempTex;
+            //Flip
+
             Byte[] TextureData = Texture.EncodeToPNG();
             using (var File = System.IO.File.Open(ProjectPath + FilePath, FileMode.Create))
             {
                 File.Write(TextureData, 0, TextureData.Length);
             }
+
+            GC.Collect();
 
             if (RefreshAssets)
             {
@@ -737,6 +769,7 @@ namespace uSource
             }
         }
 #endif
+        #endregion
 
         public static void CloseStreams()
         {
