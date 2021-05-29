@@ -16,7 +16,7 @@ namespace uSource.Formats.Source.MDL
 
         public VVDFile(Stream FileInput, MDLFile mdl)
         {
-            using (var FileStream = new uReader(FileInput))
+            using (uReader FileStream = new uReader(FileInput))
             {
                 FileStream.ReadTypeFixed(ref VVD_Header, 64);
 
@@ -33,32 +33,32 @@ namespace uSource.Formats.Source.MDL
                 HasTangents = VVD_Header.tangentDataStart != 0;
 
                 //"HasTagents" used to avoid non-zero length
-                var sizeVerts = (HasTangents ? VVD_Header.tangentDataStart - VVD_Header.vertexDataStart : FileStream.InputStream.Length - VVD_Header.vertexDataStart) / 48;
-                var tempVerts = new mstudiovertex_t[sizeVerts];
+                Int64 TotalVerts = (HasTangents ? VVD_Header.tangentDataStart - VVD_Header.vertexDataStart : FileStream.InputStream.Length - VVD_Header.vertexDataStart) / 48;
+                mstudiovertex_t[] tempVerts = new mstudiovertex_t[TotalVerts];
                 FileStream.ReadArrayFixed(ref tempVerts, 48, VVD_Header.vertexDataStart);
 
                 VVD_Vertexes = new mstudiovertex_t[VVD_Header.numLODs][];
-                var lodVerts = new List<mstudiovertex_t>();
+                List<mstudiovertex_t> TempVerts = new List<mstudiovertex_t>();
 
-                for (var lodID = 0; lodID < VVD_Header.numLODs; ++lodID)
+                for (var LODID = 0; LODID < VVD_Header.numLODs; ++LODID)
                 {
                     if (VVD_Header.numFixups == 0)
                     {
-                        VVD_Vertexes[lodID] = tempVerts.Take(VVD_Header.numLODVertexes[lodID]).ToArray();
+                        VVD_Vertexes[LODID] = tempVerts.Take(VVD_Header.numLODVertexes[LODID]).ToArray();
                         continue;
                     }
 
-                    lodVerts.Clear();
+                    TempVerts.Clear();
 
-                    foreach (var vertexFixup in VVD_Fixups)
+                    foreach (var VertexFixup in VVD_Fixups)
                     {
-                        if (vertexFixup.lod >= lodID)
+                        if (VertexFixup.lod >= LODID)
                         {
-                            lodVerts.AddRange(tempVerts.Skip(vertexFixup.sourceVertexID).Take(vertexFixup.numVertexes));
+                            TempVerts.AddRange(tempVerts.Skip(VertexFixup.sourceVertexID).Take(VertexFixup.numVertexes));
                         }
                     }
 
-                    VVD_Vertexes[lodID] = lodVerts.ToArray();
+                    VVD_Vertexes[LODID] = TempVerts.ToArray();
                 }
             }
         }

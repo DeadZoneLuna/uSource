@@ -12,7 +12,7 @@ namespace uSource.Formats.Source.MDL
 
 		public VTXFile(Stream FileInput, MDLFile StudioMDL, VVDFile StudioVVD)
 		{
-			using (var FileStream = new uReader(FileInput))
+			using (uReader FileStream = new uReader(FileInput))
 			{
 				studiohdr_t MDL_Header = StudioMDL.MDL_Header;
 				FileStream.ReadTypeFixed(ref VTX_Header, 36);
@@ -86,7 +86,7 @@ namespace uSource.Formats.Source.MDL
 										{
 											for (var j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices; j++)
 											{
-												pIndices.Add(Vertexes[Indices[j]].origMeshVertId + MDLMesh.vertexoffset);// + vertexoffset);
+												pIndices.Add(Vertexes[Indices[j]].origMeshVertId + MDLMesh.vertexoffset);
 											}
 										}
 										else if ((VTXStrip.flags & VTXStripGroupTriStripFlag) > 0)
@@ -96,7 +96,7 @@ namespace uSource.Formats.Source.MDL
 												var add = j % 2 == 1 ? new[] { j + 1, j, j + 2 } : new[] { j, j + 1, j + 2 };
 												foreach (var idx in add)
 												{
-													pIndices.Add(Vertexes[Indices[idx]].origMeshVertId + MDLMesh.vertexoffset);// + vertexoffset);
+													pIndices.Add(Vertexes[Indices[idx]].origMeshVertId + MDLMesh.vertexoffset);
 												}
 											}
 										}
@@ -104,11 +104,7 @@ namespace uSource.Formats.Source.MDL
 								}
 
 								StudioMDL.SetIndices(bodypartID, modelID, LODID, MeshID, pIndices);
-								//StudioMDL.MDL_Bodyparts[bodypartID].Models[modelID].IndicesPerLod[LODID].Add(MeshID, pIndices);
 							}
-
-							//StudioMDL.MDL_Bodyparts[bodypartID].Models[modelID].VerticesPerLod[LODID] = new mstudiovertex_t[TotalVerts];
-							//Array.Copy(StudioVVD.VVD_Vertexes[LODID], vertexoffset[LODID], StudioMDL.MDL_Bodyparts[bodypartID].Models[modelID].VerticesPerLod[LODID], 0, TotalVerts);
 
 							StudioMDL.SetVertices(bodypartID, modelID, LODID, TotalVerts, vertexoffset[LODID], StudioVVD.VVD_Vertexes[LODID]);
 

@@ -38,7 +38,7 @@ namespace uSource.Formats.Source.MDL
         public StudioBodyPart[] MDL_Bodyparts;
         public MDLFile(Stream FileInput, Boolean parseAnims = false, Boolean parseHitboxes = false)
         {
-            using (var FileStream = new uReader(FileInput))
+            using (uReader FileStream = new uReader(FileInput))
             {
                 FileStream.ReadTypeFixed(ref MDL_Header, 392);
 
