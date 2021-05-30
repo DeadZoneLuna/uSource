@@ -277,7 +277,9 @@ namespace uSource.Formats.Source.VBSP
                     {
                         uLight.type = LightType.Area;
                         uLight.intensity += BSP_WorldLights[wID].radius * uLoader.UnitScale;
+#if UNITY_EDITOR
                         uLight.areaSize = new Vector2(uLoader.UnitScale, uLoader.UnitScale);
+#endif
                     }
 
                     uLight.transform.position = pLight.origin * uLoader.UnitScale;
