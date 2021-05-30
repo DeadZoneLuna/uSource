@@ -101,6 +101,7 @@ namespace uSource
                 uLoader.UV2HardAngleProps = EditorGUILayout.IntSlider("Hard Angle: ", uLoader.UV2HardAngleProps, 0, 180);
                 uLoader.UV2AngleErrorProps = EditorGUILayout.IntSlider("Angle Error: ", uLoader.UV2AngleErrorProps, 1, 100);
                 uLoader.UV2AreaErrorProps = EditorGUILayout.IntSlider("Area Error: ", uLoader.UV2AreaErrorProps, 1, 100);
+                uLoader.UV2PackMarginTexSize = EditorGUILayout.FloatField("Margin Size: ", uLoader.UV2PackMarginTexSize);
                 uLoader.UV2PackMarginProps = EditorGUILayout.IntSlider("Pack Margin: ", uLoader.UV2PackMarginProps, 1, 64);
                 GUILayout.EndVertical();
             }
@@ -303,7 +304,8 @@ namespace uSource
         public static Boolean ParseLightmaps = false;
         public static Single ModelsLightmapSize = 0.001f;
         public static Int32 UV2HardAngleProps = 88;
-        public static Int32 UV2PackMarginProps = 4;
+        public static Single UV2PackMarginTexSize = 256;
+        public static Int32 UV2PackMarginProps = 1;
         public static Int32 UV2AngleErrorProps = 8;
         public static Int32 UV2AreaErrorProps = 15;
         #endregion

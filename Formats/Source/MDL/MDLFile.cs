@@ -488,6 +488,7 @@ namespace uSource.Formats.Source.MDL
                                 so.FindProperty("m_ScaleInLightmap").floatValue = uLoader.ModelsLightmapSize;
                                 so.ApplyModifiedProperties();
 
+                                MeshObject.isStatic = GenerateUV2;
                                 uResourceManager.UV2GenerateCache.Add(pMesh);
                             }
 

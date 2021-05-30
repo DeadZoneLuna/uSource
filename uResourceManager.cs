@@ -582,20 +582,19 @@ namespace uSource
             {
                 TotalFiles = UV2GenerateCache.Count;
 
-                UnityEditor.UnwrapParam UnwrapProps = new UnityEditor.UnwrapParam();
+                UnityEditor.UnwrapParam UnwrapProps;
 
                 UnityEditor.UnwrapParam.SetDefaults(out UnwrapProps);
                 UnwrapProps.hardAngle = uLoader.UV2HardAngleProps;
-                UnwrapProps.packMargin = uLoader.UV2PackMarginProps;
-                UnwrapProps.angleError = uLoader.UV2AngleErrorProps;
-                UnwrapProps.areaError = uLoader.UV2AreaErrorProps;
-
-                UnityEditor.UnwrapParam.SetDefaults(out UnwrapProps);
+                UnwrapProps.packMargin = uLoader.UV2PackMarginProps / uLoader.UV2PackMarginTexSize;
+                UnwrapProps.angleError = uLoader.UV2AngleErrorProps / 100.0f;
+                UnwrapProps.areaError = uLoader.UV2AreaErrorProps / 100.0f;
 
                 foreach (var Mesh in UV2GenerateCache)
                 {
                     UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Generate UV2: {0}/{1}", CurrentFile, TotalFiles), "In Progress: " + Mesh.name, (float)CurrentFile / TotalFiles);
                     CurrentFile++;
+
                     UnityEditor.Unwrapping.GenerateSecondaryUVSet(Mesh, UnwrapProps);
                 }
 
