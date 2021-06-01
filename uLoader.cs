@@ -109,6 +109,7 @@ namespace uSource
             #endregion
 
             uLoader.LoadAnims = EditorGUILayout.ToggleLeft("Load animations (Beta)", uLoader.LoadAnims);
+            uLoader.DebugMaterials = EditorGUILayout.ToggleLeft("Debug materials (Print VMT KeyValue data)", uLoader.DebugMaterials);
             uLoader.ClearDirectoryCache = EditorGUILayout.ToggleLeft("Clear directory cache", uLoader.ClearDirectoryCache);
             uLoader.ClearModelCache = EditorGUILayout.ToggleLeft("Clear model cache", uLoader.ClearModelCache);
             uLoader.ClearMaterialCache = EditorGUILayout.ToggleLeft("Clear material cache", uLoader.ClearMaterialCache);
@@ -122,6 +123,7 @@ namespace uSource
             GUILayout.Label("BSP Import Settings", EditorStyles.boldLabel);
 
             uLoader.ParseBSPPhysics = EditorGUILayout.ToggleLeft("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
+            uLoader.ParseStaticPropScale = EditorGUILayout.ToggleLeft("Parse Scale on static props lumps (only for v11 & csgo)", uLoader.ParseStaticPropScale);
             uLoader.Use3DSkybox = EditorGUILayout.ToggleLeft("Use 3D Skybox", uLoader.Use3DSkybox);
             uLoader.ParseDecals = EditorGUILayout.ToggleLeft("Parse decals (Beta)", uLoader.ParseDecals);
 
@@ -162,6 +164,10 @@ namespace uSource
             uLoader.MapName = EditorGUILayout.TextField("Map Name:", uLoader.MapName);
             if (GUILayout.Button("Load BSP"))
             {
+                uLoader.DebugTime = new System.Diagnostics.Stopwatch();
+                uLoader.DebugTimeOutput = new System.Text.StringBuilder();
+                uLoader.DebugTime.Start();
+
                 uLoader.Clear();
                 uResourceManager.LoadMap(uLoader.MapName);
             }
@@ -222,6 +228,51 @@ namespace uSource
                 uResourceManager.ExportFromCache();
                 uResourceManager.CloseStreams();
             }
+
+            GUILayout.EndVertical();
+            #endregion
+
+            #region VMT
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("VMT Settings", EditorStyles.boldLabel);
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Global Shaders", EditorStyles.boldLabel);
+            uLoader.DefaultShader = EditorGUILayout.TextField("Default Shader: ", uLoader.DefaultShader);
+            uLoader.LightmappedGenericShader = EditorGUILayout.TextField("LightmappedGeneric Shader: ", uLoader.LightmappedGenericShader);
+            uLoader.VertexLitGenericShader = EditorGUILayout.TextField("VertexLitGeneric Shader: ", uLoader.VertexLitGenericShader);
+            uLoader.WorldVertexTransitionShader = EditorGUILayout.TextField("WorldVertexTransition Shader: ", uLoader.WorldVertexTransitionShader);
+            uLoader.WorldTwoTextureBlend = EditorGUILayout.TextField("WorldTwoTextureBlend Shader: ", uLoader.WorldTwoTextureBlend);
+            uLoader.UnlitGeneric = EditorGUILayout.TextField("Unlit Shader: ", uLoader.UnlitGeneric);
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Additive Shaders", EditorStyles.boldLabel);
+            uLoader.AdditiveShader = EditorGUILayout.TextField("Additive Shader: ", uLoader.AdditiveShader);
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Detail Shaders", EditorStyles.boldLabel);
+            uLoader.DetailShader = EditorGUILayout.TextField("Detail Shader: ", uLoader.DetailShader);
+            uLoader.DetailUnlitShader = EditorGUILayout.TextField("Unlit Shader: ", uLoader.DetailUnlitShader);
+            uLoader.DetailTranslucentShader = EditorGUILayout.TextField("Translucent Shader: ", uLoader.DetailTranslucentShader);
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Translucent Shaders", EditorStyles.boldLabel);
+            uLoader.TranslucentShader = EditorGUILayout.TextField("Translucent Shader: ", uLoader.TranslucentShader);
+            uLoader.TranslucentUnlitShader = EditorGUILayout.TextField("Unlit Shader: ", uLoader.TranslucentUnlitShader);
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("AlphaTest (Cutout) Shaders", EditorStyles.boldLabel);
+            uLoader.AlphaTestShader = EditorGUILayout.TextField("AlphaTest Shader: ", uLoader.AlphaTestShader);
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("SelfIllum Shaders", EditorStyles.boldLabel);
+            uLoader.SelfIllumShader = EditorGUILayout.TextField("SelfIllum Shader: ", uLoader.SelfIllumShader);
+            GUILayout.EndVertical();
 
             GUILayout.EndVertical();
             #endregion
@@ -321,6 +372,7 @@ namespace uSource
         //BSP
         public static String MapName = "test_lights";
         public static Boolean ParseBSPPhysics = false;
+        public static Boolean ParseStaticPropScale = false;
         public static Boolean Use3DSkybox = false;
         public static Boolean ParseDecals = false;
         public static Boolean UseGammaLighting = true;
@@ -333,6 +385,7 @@ namespace uSource
         public static Boolean IgnoreShadowControl = false;
         public static Boolean UseDynamicLight = true;
         public static Boolean DebugEntities = true;
+        public static Boolean DebugMaterials = true;
         //BSP
 
         public static List<LightmapData> lightmapsData; //Base LightmapData
@@ -392,6 +445,31 @@ namespace uSource
         //MDL
         #endregion
 
+        #region VMT
+        //Additive
+        public static String AdditiveShader = "USource/AdditiveGeneric";
+        //Detail
+        public static String DetailShader = "USource/DetailGeneric";
+        public static String DetailUnlitShader = "USource/UnlitGeneric";
+        public static String DetailTranslucentShader = "USource/TranslucentGeneric";
+        //Translucent
+        public static String TranslucentShader = "USource/TranslucentGeneric";
+        public static String TranslucentUnlitShader = "Unlit/Transparent";
+        //AlphaTest (Cutout)
+        public static String AlphaTestShader = "USource/CutoutGeneric";
+        //SelfIllum
+        public static String SelfIllumShader = "USource/IllumGeneric";
+        //Global
+        public static String DefaultShader = "Diffuse";
+        public static String LightmappedGenericShader = "Diffuse";
+        public static String VertexLitGenericShader = "Diffuse";
+        public static String WorldVertexTransitionShader = "USource/Lightmapped/WorldVertexTransition";
+        public static String WorldTwoTextureBlend = "USource/Lightmapped/WorldTwoTextureBlend";
+        public static String UnlitGeneric = "USource/UnlitGeneric";
+        #endregion
+
+        public static System.Text.StringBuilder DebugTimeOutput;
+        public static System.Diagnostics.Stopwatch DebugTime;
         public static void Clear()
         {
 #if UNITY_EDITOR

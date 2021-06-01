@@ -8,7 +8,7 @@ namespace uSource.Formats.Source.VTF
 {
     public class VMTFile
     {
-        String FileName = "";
+        public String FileName = "";
         public static int TransparentQueue = 3001;
 
         public KeyValues.Entry this[string shader] => _keyValues[shader];
@@ -123,64 +123,87 @@ namespace uSource.Formats.Source.VTF
             Material.name = FileName;
             Material.color = GetColor();
 
+            String TextureName;
+            String PropertyName;
+            Texture2D BaseTexture = null;
             if (ContainsParma("$basetexture"))
             {
-                String TextureName = GetParma("$basetexture");
-                Material.mainTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
+                TextureName = GetParma("$basetexture");
+                BaseTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
+                Material.mainTexture = BaseTexture;
             }
 
             //if (Material.mainTexture == null && ContainsParma("$bumpmap"))
             //    Material.mainTexture = ResourceManager.LoadTexture(GetParma("$bumpmap"))[0];
 
-            if (Material.mainTexture == null && ContainsParma("$envmapmask"))
+            if (BaseTexture == null && ContainsParma("$envmapmask"))
             {
-                String TextureName = GetParma("$envmapmask");
-                Material.mainTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
+                TextureName = GetParma("$envmapmask");
+                BaseTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
+                Material.mainTexture = BaseTexture;
             }
 
             if (ContainsParma("$basetexture2"))
             {
-                if(Material.HasProperty("_BlendTex"))
-                    Material.SetTexture("_BlendTex", uResourceManager.LoadTexture(GetParma("$basetexture2"))[0, 0]);
+                TextureName = GetParma("$basetexture2");
+                PropertyName = "_SecondTex";
+                if (Material.HasProperty(PropertyName))
+                    Material.SetTexture(PropertyName, uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, PropertyName } })[0, 0]);
+            }
+
+            Boolean HasMask = ContainsParma("$envmapmask");
+            if (HasMask)
+            {
+                PropertyName = "_AlphaMask";
+                if (Material.HasProperty(PropertyName))
+                {
+                    if (BaseTexture != null && !BaseTexture.alphaIsTransparency)
+                    {
+                        TextureName = GetParma("$envmapmask");
+                        Material.SetInt(PropertyName, 1);
+                        Material.SetTexture("_MaskTex", uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MaskTex" } })[0, 0]);
+                    }
+                }
             }
 
             //Base props
 
             //_IsTranslucent
-            if (ContainsParma("$translucent"))
+            if (IsTrue("$translucent"))
             {
-                if (Material.HasProperty("_IsTranslucent"))
+                /*if (Material.HasProperty("_IsTranslucent"))
                 {
                     Material.SetInt("_IsTranslucent", GetInteger("$translucent"));
                     Material.SetInt("_Cull", 0);
                     Material.SetInt("_ZState", 0);
-                }
+                }*/
 
-                Material.renderQueue = VMTFile.TransparentQueue++;//(int)UnityEngine.Rendering.RenderQueue.Transparent;
+                Material.renderQueue = TransparentQueue++;
             }
 
             //_AlphaTest
-            if (ContainsParma("$alphatest"))
+            if (IsTrue("$alphatest"))
             {
-                if (Material.HasProperty("_AlphaTest"))
-                    Material.SetInt("_AlphaTest", GetInteger("$alphatest"));
+                //if (Material.HasProperty("_AlphaTest"))
+                //    Material.SetInt("_AlphaTest", GetInteger("$alphatest"));
 
                 Material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
             }
 
             //$nocull
-            if (Material.HasProperty("_Cull"))
+            if (IsTrue("$nocull"))
             {
-                Material.SetInt("_Cull", IsTrue("$nocull") ? 0 : 2);
+                if(Material.HasProperty("_Cull"))
+                    Material.SetInt("_Cull", IsTrue("$nocull") ? 0 : 2);
             }
 
-            //Base props
-
-            if (Material.HasProperty("_Detail"))
+            if (ContainsParma("$detail"))
             {
-                if (ContainsParma("$detail"))
+                PropertyName = "_Detail";
+                if (Material.HasProperty(PropertyName))
                 {
-                    Material.SetTexture("_Detail", uResourceManager.LoadTexture(GetParma("$detail"))[0, 0]);
+                    TextureName = GetParma("$detail");
+                    Material.SetTexture(PropertyName, uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, PropertyName } })[0, 0]);
 
                     if (ContainsParma("$detailscale"))
                     {
@@ -188,69 +211,104 @@ namespace uSource.Formats.Source.VTF
                         Material.SetTextureScale("_Detail", new Vector2(detailScale, detailScale));
                     }
 
-                    if (ContainsParma("$detailblendfactor"))
+                    if (Material.HasProperty("_DetailFactor"))
                     {
-                        float blendFactor = GetSingle("$detailblendfactor") / 2;
-                        Material.SetFloat("_DetailFactor", blendFactor);
-                    }
-                    else
-                        Material.SetFloat("_DetailFactor", 0.5f);
+                        if (ContainsParma("$detailblendfactor"))
+                        {
+                            float blendFactor = GetSingle("$detailblendfactor") / 2;
+                            Material.SetFloat("_DetailFactor", blendFactor);
+                        }
+                        else
+                            Material.SetFloat("_DetailFactor", 0.5f);
 
-                    if (ContainsParma("$detailblendmode"))
-                    {
-                        int blendMode = GetInteger("$detailblendmode");
-                        Material.SetInt("_DetailBlendMode", blendMode);
+                        if (ContainsParma("$detailblendmode"))
+                        {
+                            int blendMode = GetInteger("$detailblendmode");
+                            Material.SetInt("_DetailBlendMode", blendMode);
+                        }
                     }
                 }
             }
 
-            if (ContainsParma("$bumpmap"))
+            //Base props
+
+            /*if (ContainsParma("$bumpmap"))
             {
                 if (Material.HasProperty("_BumpMap"))
                     Material.SetTexture("_BumpMap", uResourceManager.LoadTexture(GetParma("$bumpmap"))[0, 0]);
-            }
-
-#if UNITY_EDITOR
-            /*if (uLoader.SaveAssetsToUnity)
-            {
-                uResourceManager.SaveAsset(Material, FileName, uResourceManager.MaterialsExtension[0], ".mat");
             }*/
-#endif
 
             //if (ContainsParma("$surfaceprop"))
             //    Material.name = Items["$surfaceprop"];
-
-            //return Material;
         }
 
         public Shader GetShader(String shader)
         {
             if (!string.IsNullOrEmpty(shader))
             {
-                if(shader.Equals("lightmappedgeneric"))
+                if (ContainsParma("$additive"))
+                    return Shader.Find(uLoader.AdditiveShader);
+
+                if (ContainsParma("$detail"))
                 {
-                    //if (IsTrue("$translucent"))
-                    //    return Shader.Find("Transparent/Diffuse");
+                    if (shader.Equals("unlitgeneric"))
+                        return Shader.Find(uLoader.DetailUnlitShader);
 
-                    //if (ContainsParma("$detail"))
-                    //    return Shader.Find("USource/Lightmapped/GenericDetail");
+                    if (shader.Equals("worldtwotextureblend"))
+                        return Shader.Find(uLoader.WorldTwoTextureBlend);
 
-                    return Shader.Find("Diffuse");//Shader.Find("USource/Lightmapped/Generic");
+                    if (IsTrue("$translucent"))
+                        return Shader.Find(uLoader.DetailTranslucentShader);
+
+                    return Shader.Find(uLoader.DetailShader);
                 }
+
+                if (IsTrue("$translucent"))
+                {
+                    if(shader.Equals("unlitgeneric"))
+                        return Shader.Find(uLoader.TranslucentUnlitShader);
+
+                    return Shader.Find(uLoader.TranslucentShader);
+                }
+
+                if (IsTrue("$alphatest"))
+                {
+                    //if (shader.Equals("unlitgeneric"))
+                    //    return Shader.Find("Unlit/Transparent Cutout");
+
+                    return Shader.Find(uLoader.AlphaTestShader);//"Transparent/Cutout/Diffuse"
+                }
+
+                if (ContainsParma("$selfillum"))
+                    return Shader.Find(uLoader.SelfIllumShader);
+
+                //World / Generic
+                if (shader.Equals("lightmappedgeneric"))
+                    return Shader.Find(uLoader.LightmappedGenericShader);//USource/Lightmapped/Generic
+
+                if (shader.Equals("vertexlitgeneric"))
+                    return Shader.Find(uLoader.VertexLitGenericShader);
 
                 if (shader.Equals("worldvertextransition"))
                 {
-                    return Shader.Find("Diffuse");
+                    if (ContainsParma("$basetexture2"))
+                        return Shader.Find(uLoader.WorldVertexTransitionShader);
+
+                    return Shader.Find(uLoader.DefaultShader);
                 }
 
-                if(shader.Equals("worldtwotextureblend"))
-                {
-                    return Shader.Find("Diffuse");
-                }
+                if (shader.Equals("WorldTwoTextureBlend"))
+                    return Shader.Find(uLoader.WorldTwoTextureBlend);
+
+                if (shader.Equals("unlitgeneric"))
+                    return Shader.Find(uLoader.UnlitGeneric);
+
+                //if(shader.Equals("worldtwotextureblend"))
+                //    return Shader.Find("Diffuse");
             }
 
             //Diffuse
-            return Shader.Find("Diffuse");
+            return Shader.Find(uLoader.DefaultShader);
         }
 
         public Boolean ContainsParma(String parma)
@@ -294,7 +352,6 @@ namespace uSource.Formats.Source.VTF
         public bool IsTrue(string Input)
         {
             if (ContainsParma(Input))
-                //if (Items[Input] == "1")
                 return this[_Shader][Input] == true;
 
             return false;

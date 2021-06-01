@@ -196,15 +196,18 @@ namespace uSource.Formats.Source.VTF
 
                 TextureFormat InternalFormat = TextureFormat.BGRA32;
                 Boolean needCompress = false;
+                Boolean hasAlpha = false;
                 switch (HighResImageFormat)
                 {
                     case VTFImageFormat.IMAGE_FORMAT_A8:
                         InternalFormat = TextureFormat.Alpha8;
+                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
                     case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
                         InternalFormat = TextureFormat.ARGB32;
+                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_BGR565:
@@ -214,16 +217,22 @@ namespace uSource.Formats.Source.VTF
 
                     case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
                         InternalFormat = TextureFormat.RGBA4444;
+                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_DXT1:
+                        InternalFormat = TextureFormat.DXT1;
+                        break;
+
                     case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
                         InternalFormat = TextureFormat.DXT1;
+                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_DXT3:
                     case VTFImageFormat.IMAGE_FORMAT_DXT5:
                         InternalFormat = TextureFormat.DXT5;
+                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_RGB888:
@@ -254,6 +263,7 @@ namespace uSource.Formats.Source.VTF
                     {
                         Frames[FrameID, FaceID] = new Texture2D(Width, Height, InternalFormat, mipmaps);
                         Frames[FrameID, FaceID].name = FileName;
+                        Frames[FrameID, FaceID].alphaIsTransparency = hasAlpha;
                         Frames[FrameID, FaceID].LoadRawTextureData(FramesData[FrameID].ToArray());
                         Frames[FrameID, FaceID].Apply();
 
