@@ -461,6 +461,12 @@ namespace uSource.Formats.Source.MDL
                                 MeshFilter.sharedMesh = pMesh;
                             }
 
+                            #if UNITY_EDITOR
+                            VTF.DebugMaterial DebugMat = null;
+                            if (uLoader.DebugMaterials)
+                                DebugMat = MeshObject.AddComponent<VTF.DebugMaterial>();
+                            #endif
+
                             Material[] pMaterials = new Material[pMesh.subMeshCount];
                             for (Int32 meshID = 0; meshID < Model.Model.nummeshes; meshID++)
                             {
@@ -473,7 +479,14 @@ namespace uSource.Formats.Source.MDL
 
                                     if (uResourceManager.ContainsFile(MaterialPath, uResourceManager.MaterialsSubFolder, uResourceManager.MaterialsExtension[0]))
                                     {
-                                        pMaterials[meshID] = uResourceManager.LoadMaterial(MaterialPath).Material;
+                                        VTF.VMTFile VMT = uResourceManager.LoadMaterial(MaterialPath);
+
+                                        #if UNITY_EDITOR
+                                        if (uLoader.DebugMaterials)
+                                            DebugMat.Init(VMT);
+                                        #endif
+
+                                        pMaterials[meshID] = VMT.Material;
                                         break;
                                     }
                                     //else if (j == MDL_TDirectories.Length - 1)

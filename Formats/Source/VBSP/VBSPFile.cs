@@ -53,8 +53,6 @@ namespace uSource.Formats.Source.VBSP
 
         // ======== DEBUG ======= //
 
-        static System.Diagnostics.Stopwatch stopwatch;
-
         //TODO: Check if LUMPs has a LZMA compression (ex: updated tf maps)
         public static void Load(Stream stream, string BSPName)
         {
@@ -293,11 +291,6 @@ namespace uSource.Formats.Source.VBSP
             uLoader.lightmapsData = new List<LightmapData>();
             LightmapSettings.lightmapsMode = LightmapsMode.NonDirectional;
 
-            //Debug import
-            stopwatch = new System.Diagnostics.Stopwatch();
-            stopwatch.Start();
-            //Debug import
-
             LoadEntities();
 
             try
@@ -306,10 +299,6 @@ namespace uSource.Formats.Source.VBSP
             }
             finally
             {
-                //Debug import
-                stopwatch.Stop();
-                Debug.Log("Total Time " + stopwatch.Elapsed);
-                //Debug import
                 UnloadAll();
             }
         }
@@ -535,7 +524,8 @@ namespace uSource.Formats.Source.VBSP
                     VMTFile ValveMaterial = uResourceManager.LoadMaterial(BSP_TextureStringData[i]);
                     MeshRenderer.sharedMaterial = ValveMaterial.Material;
 #if UNITY_EDITOR
-                    MeshObject.AddComponent<DebugMaterial>().Init(ValveMaterial);
+                    if(uLoader.DebugMaterials)
+                        MeshObject.AddComponent<DebugMaterial>().Init(ValveMaterial);
 #endif
 
                     MeshRenderer.lightmapIndex = uLoader.CurrentLightmap;
@@ -1231,7 +1221,9 @@ namespace uSource.Formats.Source.VBSP
                                 StaticPropName = ModelEntries[StaticPropLumpV11_t.m_PropType];
                                 m_Origin = MathLibrary.SwapY(StaticPropLumpV11_t.m_Origin) * uLoader.UnitScale;
                                 m_Angles = new Vector3(StaticPropLumpV11_t.m_Angles.x, -StaticPropLumpV11_t.m_Angles.y, -StaticPropLumpV11_t.m_Angles.z);
-                                //m_UniformScale = StaticPropLumpV11_t.m_UniformScale;
+
+                                if(uLoader.ParseStaticPropScale)
+                                    m_UniformScale = StaticPropLumpV11_t.m_UniformScale;
                                 break;
 
                             default:

@@ -14,6 +14,7 @@ using UnityEngine;
 
 namespace uSource
 {
+    #region Resource Provider
     public interface IResourceProvider
     {
         Boolean ContainsFile(String FilePath);
@@ -167,6 +168,7 @@ namespace uSource
             VPK = null;
         }
     }
+    #endregion
 
     public class uResourceManager
     {
@@ -209,6 +211,28 @@ namespace uSource
         public static List<String[,]> TexExportCache;
         public static List<Mesh> UV2GenerateCache;
 #endif
+
+        public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
+        public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
+        {
+            //TODO: make sure if subfolder was found only at the beginning 
+            //As there may including special names folder with subfolder name & this will be create problems with normalize
+            Int32 SubIndex = FileName.IndexOf(SubFolder, StringComparison.Ordinal);
+            if (SubIndex >= 0)
+                FileName = FileName.Remove(SubIndex, SubFolder.Length);
+
+            Int32 ExtensionIndex = FileName.LastIndexOf(FileExtension, StringComparison.Ordinal);
+            if (ExtensionIndex >= 0)
+                FileName = FileName.Remove(ExtensionIndex, FileExtension.Length);
+
+            FileName = slashesRegex.Replace(SubFolder + FileName, "/").ToLower();
+            if (outputExtension)
+                return FileName + FileExtension;
+            else
+                return FileName;
+        }
+
+        #region Provider Manager
         public static void Init(Int32 StartIndex = 0, IResourceProvider mainProvider = null)
         {
             if (ModelCache == null)
@@ -295,9 +319,21 @@ namespace uSource
             _providers.RemoveRange(0, _providers.Count);
         }
 
+        public static Boolean ContainsFile(String FileName, String SubFolder, String FileExtension)
+        {
+            String FilePath = NormalizePath(FileName, SubFolder, FileExtension);
+            for (Int32 i = 0; i < _providers.Count; i++)
+            {
+                if (_providers[i].ContainsFile(FilePath))
+                    return true;
+            }
+
+            return false;
+        }
+
         public static Stream OpenFile(String FilePath)
         {
-            for (Int32 i = _providers.Count - 1; i >= 0; --i)
+            for (Int32 i = 0; i < _providers.Count; i++)
             {
                 if (_providers[i].ContainsFile(FilePath))
                 {
@@ -307,6 +343,15 @@ namespace uSource
 
             return _providers[0].OpenFile(FilePath);
         }
+
+        public static void CloseStreams()
+        {
+            for (Int32 i = 0; i < _providers.Count; i++)
+            {
+                _providers[i].CloseStreams();
+            }
+        }
+        #endregion
 
         public static void LoadMap(String MapName)
         {
@@ -327,7 +372,7 @@ namespace uSource
                 using (Stream BSPStream = TempFile)
                 {
                     if (BSPStream == null)
-                    {
+                    { 
                         CloseStreams();
                         RemoveResourceProviders();
                         throw new FileLoadException(FileName + " NOT FOUND!");
@@ -336,7 +381,18 @@ namespace uSource
                     if (uLoader.ModFolders.Length > 1)
                         Init(1);
 
+#if UNITY_EDITOR
+                    uLoader.DebugTime.Stop();
+                    uLoader.DebugTimeOutput.AppendLine("Init time: " + uLoader.DebugTime.Elapsed);
+                    uLoader.DebugTime.Restart();
+#endif
+
                     VBSPFile.Load(BSPStream, MapName);
+
+#if UNITY_EDITOR
+                    uLoader.DebugTime.Stop();
+                    uLoader.DebugTimeOutput.AppendLine("Load time: " + uLoader.DebugTime.Elapsed);
+#endif
                 }
             }
             finally
@@ -540,62 +596,31 @@ namespace uSource
             return VTFFile.Frames;
         }
 
-        public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
-        public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
-        {
-            //TODO: make sure if subfolder was found only at the beginning 
-            //As there may including special names folder with subfolder name & this will be create problems with normalize
-            Int32 SubIndex = FileName.IndexOf(SubFolder, StringComparison.Ordinal);
-            if (SubIndex >= 0)
-                FileName = FileName.Remove(SubIndex, SubFolder.Length);
-
-            Int32 ExtensionIndex = FileName.LastIndexOf(FileExtension, StringComparison.Ordinal);
-            if (ExtensionIndex >= 0)
-                FileName = FileName.Remove(ExtensionIndex, FileExtension.Length);
-
-            FileName = slashesRegex.Replace(SubFolder + FileName, "/").ToLower();
-            if (outputExtension)
-                return FileName + FileExtension;
-            else
-                return FileName;
-        }
-
-        public static Boolean ContainsFile(String FileName, String SubFolder, String FileExtension)
-        {
-            String FilePath = NormalizePath(FileName, SubFolder, FileExtension);
-            for (Int32 i = _providers.Count - 1; i >= 0; --i)
-            {
-                if (_providers[i].ContainsFile(FilePath))
-                    return true;
-            }
-
-            return false;
-        }
-
         #region Export resources
         public static void ExportFromCache()
         {
 #if UNITY_EDITOR
+            if(uLoader.DebugTime != null)
+                uLoader.DebugTime.Restart();
+
             Int32 CurrentFile = 0;
             Int32 TotalFiles = 0;
             if (uLoader.GenerateUV2StaticProps)
             {
                 TotalFiles = UV2GenerateCache.Count;
 
+                //Unwrap settings
                 UnityEditor.UnwrapParam UnwrapProps;
-
                 UnityEditor.UnwrapParam.SetDefaults(out UnwrapProps);
                 UnwrapProps.hardAngle = uLoader.UV2HardAngleProps;
                 UnwrapProps.packMargin = uLoader.UV2PackMarginProps / uLoader.UV2PackMarginTexSize;
                 UnwrapProps.angleError = uLoader.UV2AngleErrorProps / 100.0f;
                 UnwrapProps.areaError = uLoader.UV2AreaErrorProps / 100.0f;
 
-                foreach (var Mesh in UV2GenerateCache)
+                for(Int32 MeshID = 0; MeshID < TotalFiles; MeshID++)
                 {
-                    UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Generate UV2: {0}/{1}", CurrentFile, TotalFiles), "In Progress: " + Mesh.name, (float)CurrentFile / TotalFiles);
-                    CurrentFile++;
-
-                    UnityEditor.Unwrapping.GenerateSecondaryUVSet(Mesh, UnwrapProps);
+                    UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Generate UV2: {0}/{1}", MeshID, TotalFiles), "In Progress: " + UV2GenerateCache[MeshID].name, (float)MeshID / TotalFiles);
+                    UnityEditor.Unwrapping.GenerateSecondaryUVSet(UV2GenerateCache[MeshID], UnwrapProps);
                 }
 
                 UnityEditor.EditorUtility.ClearProgressBar();
@@ -620,17 +645,15 @@ namespace uSource
 
                 UnityEditor.EditorUtility.ClearProgressBar();
 
-                CurrentFile = 0;
                 TotalFiles = TexExportCache.Count;
                 Boolean NeedRefresh = false;
                 for (Int32 TexID = 0; TexID < TotalFiles; TexID++)
                 {
                     String FilePath = TexExportCache[TexID][0, 2];
 
-                    UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Convert Textures: {0}/{1}", CurrentFile, TotalFiles), FilePath, (float)CurrentFile / TotalFiles);
-                    CurrentFile++;
+                    UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Convert Textures: {0}/{1}", TexID, TotalFiles), FilePath, (float)TexID / TotalFiles);
 
-                    //If textures exist in cache, try convert it
+                    //If texture exist in cache, try convert it
                     if (TextureCache.ContainsKey(FilePath))
                     {
                         String AssetPath = TexExportCache[TexID][0, 2] = FilePath + TexExportType;
@@ -659,18 +682,16 @@ namespace uSource
                     UnityEditor.AssetDatabase.SaveAssets();
                 }
 
-                CurrentFile = 0;
-                foreach (var ItemCache in TexExportCache)
+                for (Int32 TexID = 0; TexID < TotalFiles; TexID++)
                 {
-                    if (ItemCache == null)
+                    if (TexExportCache[TexID] == null)
                         continue;
 
-                    String MaterialPath = ItemCache[0, 0];
-                    String PropertyPath = ItemCache[0, 1];
-                    String FilePath = ItemCache[0, 2];
+                    String MaterialPath = TexExportCache[TexID][0, 0];
+                    String PropertyPath = TexExportCache[TexID][0, 1];
+                    String FilePath = TexExportCache[TexID][0, 2];
 
-                    UnityEditor.EditorUtility.DisplayProgressBar("Reset textutres in materials", FilePath, (float)CurrentFile / TotalFiles);
-                    CurrentFile++;
+                    UnityEditor.EditorUtility.DisplayProgressBar("Reset textutres in materials", FilePath, (float)TexID / TotalFiles);
 
                     Texture2D TexObj = null;
                     if (File.Exists(ProjectPath + FilePath))
@@ -683,6 +704,13 @@ namespace uSource
                 }
 
                 UnityEditor.EditorUtility.ClearProgressBar();
+            }
+
+            if (uLoader.DebugTime != null)
+            {
+                uLoader.DebugTime.Stop();
+                uLoader.DebugTimeOutput.AppendLine("Export / Convert total time: " + uLoader.DebugTime.Elapsed);
+                Debug.Log(uLoader.DebugTimeOutput);
             }
 #endif
         }
@@ -723,7 +751,7 @@ namespace uSource
 
             TempTex.SetPixels(PixelsFlipped);
             TempTex.Apply();
-            UnityEngine.Object.DestroyImmediate(Texture);
+            //UnityEngine.Object.DestroyImmediate(Texture);
             Texture = TempTex;
             //Flip
 
@@ -772,13 +800,5 @@ namespace uSource
         }
 #endif
         #endregion
-
-        public static void CloseStreams()
-        {
-            for (Int32 i = _providers.Count - 1; i >= 0; --i)
-            {
-                _providers[i].CloseStreams();
-            }
-        }
     }
 }

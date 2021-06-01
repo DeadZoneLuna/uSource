@@ -398,6 +398,12 @@ namespace uSource.Formats.Source.VBSP
                 Sprite DecalTexture = Sprite.Create((Texture2D)DecalMaterial.Material.mainTexture, new Rect(0, 0, DecalWidth, DecalHeight), Vector2.zero);
 
                 Decal DecalBuilder = transform.gameObject.AddComponent<Decal>();
+
+#if UNITY_EDITOR
+                if (uLoader.DebugMaterials)
+                    transform.gameObject.AddComponent<DebugMaterial>().Init(DecalMaterial);
+#endif
+
                 DecalBuilder.SetDirection();
                 DecalBuilder.MaxAngle = 87.5f;
                 DecalBuilder.Offset = 0.001f;

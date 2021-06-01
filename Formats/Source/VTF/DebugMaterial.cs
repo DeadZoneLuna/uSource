@@ -12,14 +12,17 @@ namespace uSource.Formats.Source.VTF
         [TextArea(0, 20)]
         public string Data;
 
+        StringBuilder builder;
         public void Init(VMTFile VMT)
         {
             if (VMT != null && VMT._keyValues != null)
             {
-                StringBuilder builder = new StringBuilder();
+                if (builder == null)
+                    builder = new StringBuilder();
 
                 foreach (var a in (VMT.includeVmt != null ? VMT.includeVmt : VMT)._keyValues)
                 {
+                    builder.AppendLine(VMT.FileName);
                     builder.AppendLine(a.Key);
                     builder.AppendLine("{");
 
@@ -31,7 +34,7 @@ namespace uSource.Formats.Source.VTF
                     builder.AppendLine("}");
                 }
 
-                Data = builder.ToString();
+                Data += builder.ToString();
             }
         }
     }
