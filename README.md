@@ -3,7 +3,7 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 
 ![Screenshot](Pic1.png)
 
-# Supported formats (1.0 Beta Unstable):
+# Supported formats (1.1 Beta):
 
 ## Source
 | Format | Type of content                    | Import             | Export to Unity    |
@@ -31,7 +31,7 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 | ------            | ------            | ------            | ------            |
 | NOT SUPPORTED YET | NOT SUPPORTED YET | NOT SUPPORTED YET | NOT SUPPORTED YET |
 
-# Supported features (1.0 Beta Unstable):
+# Supported features (1.1 Beta):
 
 ## Studio Models (MDL / VVD / VTX / PHY / ANI / VHV)
 | Feature                        | Supported                                                             |
@@ -54,7 +54,7 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 | ------                            | ------                                                |
 | Versions                          | 19 (possible errors!), 20, 21                         |
 | PAK                               | :heavy_check_mark:                                    |
-| LZMA Lumps                        | :x:                                                   |
+| LZMA Lumps                        | :x: (TF2 Updated maps)                                |
 | Models                            | :heavy_check_mark:                                    |
 | Physics                           | (Not a stable implementation, the code is "disabled") |
 | Displacements                     | (Partial, neighbor disps not supported yet)           |
@@ -62,7 +62,7 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 | Occlusion                         | :x:                                                   |
 | Entities                          | :heavy_check_mark:                                    |
 | Static / Dynamic Props            | :heavy_check_mark:                                    |
-| Environment / Spot / Point Lights | :heavy_check_mark:                                    |
+| WorldLights                       | :heavy_check_mark:                                    |
 | Decals                            | (Partial, overlays still not supported)               |
 | Cubemaps                          | :x:                                                   |
 | Lightmaps                         | (Partial, light style not supported yet)              |
@@ -113,44 +113,42 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 | ATI_1N            | (Not Tested)       |
 
 ## Materials (In Progress rework!)
-| Shaders               | Supported          |
-| ------                | ------             |
-| LightmappedGeneric    | :x:                |
-| LightmappedReflective | :x:                |
-| LightmappedTwoTexture | :x:                |
-| Lightmapped_4WayBlend | :x:                |
-| Multiblend            | :x:                |
-| WorldTwoTextureBlend  | :x:                |
-| WorldVertexTransition | :x:                |
-| WindowImposter        | :x:                |
-| Water                 | :x:                |
-| UnlitGeneric          | :x:                |
-| UnlitTwoTexture       | :x:                |
-| WorldGGX              | :x:                |
-| ParallaxTest          | :x:                |
-| WorldVertexTransition | :x:                |
-| WorldVertexTransition | :x:                |
-| Sky                   | :heavy_check_mark: |
-| Core                  | :x:                |
-| SpriteCard            | :x:                |
-| Cable                 | :x:                |
-| SplineRope            | :x:                |
-| Refract               | :x:                |
-| MonitorScreen         | :x:                |
-| Modulate              | :x:                |
-| VertexLitGeneric      | :x:                |
-| Eyes                  | :x:                |
-| EyeRefract            | :x:                |
-| VortWarp              | :x:                |
-| Aftershock            | :x:                |
-| Teeth                 | :x:                |
-| SurfaceGGX            | :x:                |
-| Character             | :x:                |
-| SolidEnergy           | :x:                |
-| VolumeCloud           | :x:                |
-| DecalModulate         | :x:                |
-| Shadow                | :x:                |
-| Subrect               | :x:                |
+| Shaders               | Supported               |
+| ------                | ------                  |
+| LightmappedGeneric    | (Use Default / Generic) |
+| LightmappedReflective | (Use Default / Generic) |
+| LightmappedTwoTexture | (Use Default / Generic) |
+| Lightmapped_4WayBlend | (Use Default / Generic) |
+| Multiblend            | (Use Default / Generic) |
+| WorldTwoTextureBlend  | :heavy_check_mark:      |
+| WorldVertexTransition | (Partial)               |
+| WindowImposter        | (Use Default)           |
+| Water                 | (Use Default)           |
+| UnlitGeneric          | (Partial)               |
+| UnlitTwoTexture       | (Use Default / Generic) |
+| WorldGGX              | (Use Default / Generic) |
+| ParallaxTest          | (Use Default / Generic) |
+| Sky                   | :heavy_check_mark:      |
+| Core                  | (Use Default)           |
+| SpriteCard            | (Use Default)           |
+| Cable                 | (Use Default)           |
+| SplineRope            | (Use Default)           |
+| Refract               | (Use Default)           |
+| MonitorScreen         | (Use Default)           |
+| Modulate              | (Use Default)           |
+| VertexLitGeneric      | (Use Default / Generic) |
+| Eyes                  | (Use Default)           |
+| EyeRefract            | (Use Default)           |
+| VortWarp              | (Use Default)           |
+| Aftershock            | (Use Default)           |
+| Teeth                 | (Use Default)           |
+| SurfaceGGX            | (Use Default)           |
+| Character             | (Use Default / Generic) |
+| SolidEnergy           | (Use Default)           |
+| VolumeCloud           | (Use Default)           |
+| DecalModulate         | (Use Default)           |
+| Shadow                | (Use Default)           |
+| Subrect               | (Use Default)           |
 
 ## VPK
 | Feature   | Supported          |
