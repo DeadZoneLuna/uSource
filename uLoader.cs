@@ -29,6 +29,7 @@ using UnityEditor;
 namespace uSource
 {
 #if UNITY_EDITOR
+    //TODO: Fix Window
     public class uLoaderWindow : EditorWindow
     {
         [MenuItem("uSource/Loader")]
@@ -56,234 +57,296 @@ namespace uSource
 
         public static void DrawGUI()
         {
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Global Settings", EditorStyles.boldLabel);
-            uLoader.RootPath = EditorGUILayout.TextField("Root path:", uLoader.RootPath);
-            uLoader.ModFolders[0] = EditorGUILayout.TextField("Mod Name:", uLoader.ModFolders[0]);
-            uLoader.UnitScale = EditorGUILayout.FloatField("Unit scale:", uLoader.UnitScale);
-
-            GUILayout.BeginVertical("helpbox");
-            GUILayout.Label("When resources loaded, they are stored in the scene.\n\nEnable this option, loaded resources will be saved to project\n& can edit them. (Textures and Materials at the moment)", EditorStyles.boldLabel);
-
-            uLoader.SaveAssetsToUnity = EditorGUILayout.ToggleLeft("(Save / Load) assets (to / from) project (Beta)", uLoader.SaveAssetsToUnity);
-            if (uLoader.SaveAssetsToUnity)
+            #region Global Settings
+            GUILayout.BeginVertical("minibutton");
+            if (uLoader.GlobalSettingsFoldout = EditorGUILayout.Foldout(uLoader.GlobalSettingsFoldout, "Global Settings", true, EditorStyles.miniButtonLeft))
             {
-                uLoader.OutputAssetsFolder = EditorGUILayout.TextField("Output path: ", uLoader.OutputAssetsFolder);
-                uLoader.ExportTextureAsPNG = EditorGUILayout.ToggleLeft("Convert textures as PNG (Editable format)", uLoader.ExportTextureAsPNG);
-            }
+                uLoader.RootPath = EditorGUILayout.TextField("Root path:", uLoader.RootPath);
 
-            GUILayout.EndVertical();
+                #region Mod Settings
+                GUILayout.BeginVertical("minibutton");
+                if (uLoader.ModSettingsFoldout = EditorGUILayout.Foldout(uLoader.ModSettingsFoldout, "Mod Settings", true, EditorStyles.miniButtonLeft))
+                {
+                    Int32 ModSize = uLoader.ModFolders.Length;
+                    for (Int32 ModID = 0; ModID < ModSize; ModID++)
+                    {
+                        GUILayout.BeginVertical("helpbox");
+                        uLoader.ModFolders[ModID] = EditorGUILayout.TextField(ModID == 0 ? "Main Mod: " : "Dependent Mod: ", uLoader.ModFolders[ModID]);
 
-            #region Lightmap settings
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Lightmap Settings", EditorStyles.boldLabel);
+                        GUILayout.Label("VPK Archives", EditorStyles.boldLabel);
+                        Int32 DirSize = uLoader.DirPaks[ModID].Length;
+                        for (Int32 PakID = 0; PakID < DirSize; PakID++)
+                        {
+                            if (uLoader.DirPaks[ModID] != null)
+                                uLoader.DirPaks[ModID][PakID] = EditorGUILayout.TextField(uLoader.DirPaks[ModID][PakID]);
+                        }
 
-            uLoader.ParseLightmaps = EditorGUILayout.ToggleLeft("Parse original lightmaps (BSP)", uLoader.ParseLightmaps);
-            if (uLoader.ParseLightmaps)
-            {
-                uLoader.UseGammaLighting = EditorGUILayout.ToggleLeft("Use gamma color space on lightmaps", uLoader.UseGammaLighting);
-                uLoader.UseLightmapsAsTextureShader = EditorGUILayout.ToggleLeft("Set lightmap texture on material", uLoader.UseLightmapsAsTextureShader);
-            }
+                        GUILayout.BeginHorizontal();
+                        if (GUILayout.Button("Add VPK", EditorStyles.toolbarButton))
+                        {
+                            Int32 ArraySize = DirSize;
+                            ArraySize++;
+                            Array.Resize(ref uLoader.DirPaks[ModID], ArraySize);
+                        }
+                        if (GUILayout.Button("Remove VPK", EditorStyles.toolbarButton))
+                        {
+                            Int32 ArraySize = DirSize;
+                            if (ArraySize > 0)
+                            {
+                                ArraySize--;
+                                Array.Resize(ref uLoader.DirPaks[ModID], ArraySize);
+                            }
+                        }
+                        GUILayout.EndHorizontal();
+                        GUILayout.EndVertical();
+                    }
 
-            GUILayout.Space(5);
-
-            uLoader.GenerateUV2StaticProps = EditorGUILayout.ToggleLeft("Generate UV2 (Lightmaps) for static props", uLoader.GenerateUV2StaticProps);
-            if (uLoader.GenerateUV2StaticProps)
-            {
-                GUILayout.BeginVertical("box");
-                GUILayout.Label("Static Props (Models)", EditorStyles.boldLabel);
+                    GUILayout.BeginHorizontal();
+                    if (GUILayout.Button("Add Mod", EditorStyles.toolbarButton))
+                    {
+                        Int32 ArraySize = uLoader.ModFolders.Length;
+                        ArraySize++;
+                        Array.Resize(ref uLoader.ModFolders, ArraySize);
+                        Array.Resize(ref uLoader.DirPaks, ArraySize);
+                        uLoader.DirPaks[ArraySize - 1] = new String[] { };
+                    }
+                    if (GUILayout.Button("Remove Mod", EditorStyles.toolbarButton))
+                    {
+                        Int32 ArraySize = uLoader.ModFolders.Length;
+                        if (ArraySize > 0)
+                        {
+                            ArraySize--;
+                            Array.Resize(ref uLoader.ModFolders, ArraySize);
+                            Array.Resize(ref uLoader.DirPaks, ArraySize);
+                        }
+                    }
+                    GUILayout.EndHorizontal();
+                }
+                GUILayout.EndVertical();
+                #endregion
 
                 GUILayout.BeginVertical("helpbox");
-                uLoader.ModelsLightmapSize = EditorGUILayout.FloatField("Lightmap scale factor", uLoader.ModelsLightmapSize);
-                GUILayout.Label("Used to scale lightmap on models (editor & rebake only)", EditorStyles.miniBoldLabel);
+                GUILayout.Label("When resources loaded, they are stored in the scene.\n\nEnable this option, loaded resources will be saved to project\n& can edit them. (Textures and Materials at the moment)", EditorStyles.boldLabel);
+
+                uLoader.SaveAssetsToUnity = EditorGUILayout.ToggleLeft("(Save / Load) assets (to / from) project (Beta)", uLoader.SaveAssetsToUnity);
+                if (uLoader.SaveAssetsToUnity)
+                {
+                    uLoader.OutputAssetsFolder = EditorGUILayout.TextField("Output path: ", uLoader.OutputAssetsFolder);
+                    uLoader.ExportTextureAsPNG = EditorGUILayout.ToggleLeft("Convert textures as PNG (Editable format)", uLoader.ExportTextureAsPNG);
+                }
+
                 GUILayout.EndVertical();
 
-                uLoader.UV2HardAngleProps = EditorGUILayout.IntSlider("Hard Angle: ", uLoader.UV2HardAngleProps, 0, 180);
-                uLoader.UV2AngleErrorProps = EditorGUILayout.IntSlider("Angle Error: ", uLoader.UV2AngleErrorProps, 1, 100);
-                uLoader.UV2AreaErrorProps = EditorGUILayout.IntSlider("Area Error: ", uLoader.UV2AreaErrorProps, 1, 100);
-                uLoader.UV2PackMarginTexSize = EditorGUILayout.FloatField("Margin Size: ", uLoader.UV2PackMarginTexSize);
-                uLoader.UV2PackMarginProps = EditorGUILayout.IntSlider("Pack Margin: ", uLoader.UV2PackMarginProps, 1, 64);
-                GUILayout.EndVertical();
+                uLoader.UnitScale = EditorGUILayout.FloatField("Unit scale:", uLoader.UnitScale);
+                uLoader.LoadAnims = EditorGUILayout.ToggleLeft("Load animations (Beta)", uLoader.LoadAnims);
+                uLoader.ClearDirectoryCache = EditorGUILayout.ToggleLeft("Clear directory cache", uLoader.ClearDirectoryCache);
+                uLoader.ClearModelCache = EditorGUILayout.ToggleLeft("Clear model cache", uLoader.ClearModelCache);
+                uLoader.ClearMaterialCache = EditorGUILayout.ToggleLeft("Clear material cache", uLoader.ClearMaterialCache);
+                uLoader.ClearTextureCache = EditorGUILayout.ToggleLeft("Clear texture cache", uLoader.ClearTextureCache);
+
+                if (GUILayout.Button("Clear Cache", EditorStyles.toolbarButton))
+                    uLoader.Clear();
             }
             GUILayout.EndVertical();
             #endregion
 
-            uLoader.LoadAnims = EditorGUILayout.ToggleLeft("Load animations (Beta)", uLoader.LoadAnims);
-            uLoader.DebugMaterials = EditorGUILayout.ToggleLeft("Debug materials (Print VMT KeyValue data)", uLoader.DebugMaterials);
-            uLoader.ClearDirectoryCache = EditorGUILayout.ToggleLeft("Clear directory cache", uLoader.ClearDirectoryCache);
-            uLoader.ClearModelCache = EditorGUILayout.ToggleLeft("Clear model cache", uLoader.ClearModelCache);
-            uLoader.ClearMaterialCache = EditorGUILayout.ToggleLeft("Clear material cache", uLoader.ClearMaterialCache);
-            uLoader.ClearTextureCache = EditorGUILayout.ToggleLeft("Clear texture cache", uLoader.ClearTextureCache);
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
+            GUILayout.Space(2);
 
             #region BSP
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("BSP Import Settings", EditorStyles.boldLabel);
-
-            uLoader.ParseBSPPhysics = EditorGUILayout.ToggleLeft("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
-            uLoader.ParseStaticPropScale = EditorGUILayout.ToggleLeft("Parse Scale on static props lumps (only for v11 & csgo)", uLoader.ParseStaticPropScale);
-            uLoader.Use3DSkybox = EditorGUILayout.ToggleLeft("Use 3D Skybox", uLoader.Use3DSkybox);
-            uLoader.ParseDecals = EditorGUILayout.ToggleLeft("Parse decals (Beta)", uLoader.ParseDecals);
-
-            uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights (Beta)", uLoader.ParseLights);
-            if (uLoader.ParseLights)
+            GUILayout.BeginVertical("minibutton");
+            if (uLoader.BSPSettingsFoldout = EditorGUILayout.Foldout(uLoader.BSPSettingsFoldout, "BSP Import Settings", true, EditorStyles.miniButtonLeft))
             {
-                GUILayout.BeginVertical("textfield");
-                GUILayout.FlexibleSpace();
+                uLoader.ParseBSPPhysics = EditorGUILayout.ToggleLeft("Parse physics (Unstable)", uLoader.ParseBSPPhysics);
+                uLoader.ParseStaticPropScale = EditorGUILayout.ToggleLeft("Parse Scale on static props lumps (only for v11 & csgo)", uLoader.ParseStaticPropScale);
+                uLoader.Use3DSkybox = EditorGUILayout.ToggleLeft("Use 3D Skybox", uLoader.Use3DSkybox);
+                uLoader.ParseDecals = EditorGUILayout.ToggleLeft("Parse decals (Beta)", uLoader.ParseDecals);
 
-                GUILayout.BeginVertical("helpbox");
-                GUILayout.Label("BSP already have converted lights from entities to structure (WorldLights)\n!!!Recommend to use it!!!", EditorStyles.boldLabel);
-                GUILayout.EndVertical();
-
-                uLoader.UseWorldLights = EditorGUILayout.ToggleLeft("Use world lights", uLoader.UseWorldLights);
-
-                if (uLoader.UseWorldLights)
+                #region Lightmap settings
+                GUILayout.BeginVertical("minibutton");
+                if (uLoader.LightmapSettingsFoldout = EditorGUILayout.Foldout(uLoader.LightmapSettingsFoldout, "Lightmap Settings", true, EditorStyles.miniButtonLeft))
                 {
-                    GUILayout.BeginVertical("helpbox");
-                    uLoader.QuadraticIntensityFixer = EditorGUILayout.FloatField("Quadratic intensity fix const", uLoader.QuadraticIntensityFixer);
-                    GUILayout.Label("For rebake lightmaps it used lower value (def: 1~)\n\nFor fix up brightness with dynamic lights, value can be set higher (def: 4~)", EditorStyles.miniBoldLabel);
-                    GUILayout.EndVertical();
+                    uLoader.ParseLightmaps = EditorGUILayout.ToggleLeft("Parse original lightmaps (BSP)", uLoader.ParseLightmaps);
+                    if (uLoader.ParseLightmaps)
+                    {
+                        uLoader.UseGammaLighting = EditorGUILayout.ToggleLeft("Use gamma color space on lightmaps", uLoader.UseGammaLighting);
+                        uLoader.UseLightmapsAsTextureShader = EditorGUILayout.ToggleLeft("Set lightmap texture on material", uLoader.UseLightmapsAsTextureShader);
+                    }
 
-                    GUILayout.BeginVertical("helpbox");
-                    uLoader.LightEnvironmentScale = EditorGUILayout.FloatField("Scale intensity light environment", uLoader.LightEnvironmentScale);
-                    GUILayout.Label("Directional light looks more darkness in Unity\nThis parameter fixup that (multiply intensity)", EditorStyles.miniBoldLabel);
-                    GUILayout.EndVertical();
+                    GUILayout.Space(5);
+
+                    uLoader.GenerateUV2StaticProps = EditorGUILayout.ToggleLeft("Generate UV2 (Lightmaps) for static props", uLoader.GenerateUV2StaticProps);
+                    if (uLoader.GenerateUV2StaticProps)
+                    {
+                        GUILayout.BeginVertical("box");
+                        GUILayout.Label("Static Props (Models)", EditorStyles.boldLabel);
+
+                        GUILayout.BeginVertical("helpbox");
+                        uLoader.ModelsLightmapSize = EditorGUILayout.FloatField("Lightmap scale factor", uLoader.ModelsLightmapSize);
+                        GUILayout.Label("Used to scale lightmap on models (editor & rebake only)", EditorStyles.miniBoldLabel);
+                        GUILayout.EndVertical();
+
+                        uLoader.UV2HardAngleProps = EditorGUILayout.IntSlider("Hard Angle: ", uLoader.UV2HardAngleProps, 0, 180);
+                        uLoader.UV2AngleErrorProps = EditorGUILayout.IntSlider("Angle Error: ", uLoader.UV2AngleErrorProps, 1, 100);
+                        uLoader.UV2AreaErrorProps = EditorGUILayout.IntSlider("Area Error: ", uLoader.UV2AreaErrorProps, 1, 100);
+                        uLoader.UV2PackMarginTexSize = EditorGUILayout.FloatField("Margin Size: ", uLoader.UV2PackMarginTexSize);
+                        uLoader.UV2PackMarginProps = EditorGUILayout.IntSlider("Pack Margin: ", uLoader.UV2PackMarginProps, 1, 64);
+                        GUILayout.EndVertical();
+                    }
+                }
+                GUILayout.EndVertical();
+                #endregion
+
+                #region Lighting Settings
+                GUILayout.BeginVertical("minibutton");
+                if (uLoader.LightingSettingsFoldout = EditorGUILayout.Foldout(uLoader.LightingSettingsFoldout, "Lighting Settings", true, EditorStyles.miniButtonLeft))
+                {
+                    uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights (Beta)", uLoader.ParseLights);
+                    if (uLoader.ParseLights)
+                    {
+                        GUILayout.BeginVertical("helpbox");
+                        GUILayout.Label("BSP already store lights in \"dworldlight\" structure\n!!!Recommend to use it!!!", EditorStyles.boldLabel);
+
+                        uLoader.UseWorldLights = EditorGUILayout.ToggleLeft("Use world lights", uLoader.UseWorldLights);
+
+                        GUILayout.EndVertical();
+
+                        if (uLoader.UseWorldLights)
+                        {
+                            GUILayout.BeginVertical("helpbox");
+                            uLoader.QuadraticIntensityFixer = EditorGUILayout.FloatField("Quadratic intensity fix const", uLoader.QuadraticIntensityFixer);
+                            GUILayout.Label("For rebake lightmaps it used lower value (def: 1~)\n\nFor fix up brightness with dynamic lights, value can be set higher (def: 4~)", EditorStyles.miniBoldLabel);
+                            GUILayout.EndVertical();
+
+                            GUILayout.BeginVertical("helpbox");
+                            uLoader.LightEnvironmentScale = EditorGUILayout.FloatField("Scale intensity light environment", uLoader.LightEnvironmentScale);
+                            GUILayout.Label("Directional light looks more darkness in Unity\nThis parameter fixup that (multiply intensity)", EditorStyles.miniBoldLabel);
+                            GUILayout.EndVertical();
+                        }
+
+                        uLoader.CustomCascadedShadowResolution = EditorGUILayout.IntSlider("Directional Shadow Map Size:", uLoader.CustomCascadedShadowResolution, 64, 8192);
+                        uLoader.IgnoreShadowControl = EditorGUILayout.ToggleLeft("Ignore shadow control", uLoader.IgnoreShadowControl);
+                        uLoader.UseDynamicLight = EditorGUILayout.ToggleLeft("Dynamic shadows", uLoader.UseDynamicLight);
+                    }
+                }
+                GUILayout.EndVertical();
+                #endregion
+
+                uLoader.DebugEntities = EditorGUILayout.ToggleLeft("Debug entities", uLoader.DebugEntities);
+                uLoader.MapName = EditorGUILayout.TextField("Map Name:", uLoader.MapName);
+                if (GUILayout.Button("Load BSP", EditorStyles.toolbarButton))
+                {
+                    uLoader.DebugTime = new System.Diagnostics.Stopwatch();
+                    uLoader.DebugTimeOutput = new System.Text.StringBuilder();
+                    uLoader.DebugTime.Start();
+
+                    uLoader.Clear();
+                    uResourceManager.LoadMap(uLoader.MapName);
+                    uLoader.DebugTime = null;
                 }
 
-                GUILayout.FlexibleSpace();
-                GUILayout.EndVertical();
-
-                uLoader.CustomCascadedShadowResolution = EditorGUILayout.IntSlider("Directional Shadow Map Size:", uLoader.CustomCascadedShadowResolution, 64, 8192);
-                uLoader.IgnoreShadowControl = EditorGUILayout.ToggleLeft("Ignore shadow control", uLoader.IgnoreShadowControl);
-                uLoader.UseDynamicLight = EditorGUILayout.ToggleLeft("Dynamic shadows", uLoader.UseDynamicLight);
-            }
-
-            uLoader.DebugEntities = EditorGUILayout.ToggleLeft("Debug entities", uLoader.DebugEntities);
-            uLoader.MapName = EditorGUILayout.TextField("Map Name:", uLoader.MapName);
-            if (GUILayout.Button("Load BSP"))
-            {
-                uLoader.DebugTime = new System.Diagnostics.Stopwatch();
-                uLoader.DebugTimeOutput = new System.Text.StringBuilder();
-                uLoader.DebugTime.Start();
-
-                uLoader.Clear();
-                uResourceManager.LoadMap(uLoader.MapName);
-            }
-
-            if (GUILayout.Button("Clear Cache"))
-            {
-                uLoader.Clear();
-            }
-
-            if (GUILayout.Button("Show/Hide Brushes"))
-            {
-                for (Int32 i = 0; i < VBSPFile.BSP_Brushes.Count; i++)
-                    VBSPFile.BSP_Brushes[i].GetComponent<Renderer>().enabled = !VBSPFile.BSP_Brushes[i].GetComponent<Renderer>().enabled;
+                if (GUILayout.Button("Show/Hide Brushes", EditorStyles.toolbarButton))
+                {
+                    for (Int32 i = 0; i < VBSPFile.BSP_Brushes.Count; i++)
+                        VBSPFile.BSP_Brushes[i].GetComponent<Renderer>().enabled = !VBSPFile.BSP_Brushes[i].GetComponent<Renderer>().enabled;
+                }
             }
             GUILayout.EndVertical();
             #endregion
+
+            GUILayout.Space(2);
 
             #region MDL
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("MDL Import Settings", EditorStyles.boldLabel);
-
-            uLoader.UseStaticPropFlag = EditorGUILayout.ToggleLeft("Load static bones", uLoader.UseStaticPropFlag);
-            uLoader.UseHitboxesOnModel = EditorGUILayout.ToggleLeft("Load hitboxes model", uLoader.UseHitboxesOnModel);
-            uLoader.DrawArmature = EditorGUILayout.ToggleLeft("Debug skeleton / bones", uLoader.DrawArmature);
-            uLoader.ModelPath = EditorGUILayout.TextField("Model:", uLoader.ModelPath);
-            if (GUILayout.Button("Load StudioModel"))
+            GUILayout.BeginVertical("minibutton");
+            if (uLoader.MDLSettingsFoldout = EditorGUILayout.Foldout(uLoader.MDLSettingsFoldout, "MDL Import Settings", true, EditorStyles.miniButtonLeft))
             {
-                uLoader.Clear();
-                uResourceManager.Init();
-                uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
-                uResourceManager.ExportFromCache();
-                uResourceManager.CloseStreams();
-            }
-
-            uLoader.SubModelPath = EditorGUILayout.TextField("Sub-Model: ", uLoader.SubModelPath);
-            if (GUILayout.Button("Load StudioModel + SubModel"))
-            {
-                uLoader.Clear();
-                uResourceManager.Init();
-                var mainMDL = uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
-                var subMDL = uResourceManager.LoadModel(uLoader.SubModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
-                uResourceManager.ExportFromCache();
-                uResourceManager.CloseStreams();
-
-                foreach (SkinnedMeshRenderer SkinnedMesh in subMDL.GetComponentsInChildren<SkinnedMeshRenderer>())
-                    mainMDL.CreateSubModel(SkinnedMesh);
-
-                UnityEngine.Object.DestroyImmediate(subMDL.gameObject, false);
-            }
-            if (GUILayout.Button("Load Multi StudioModel"))
-            {
-                uLoader.Clear();
-                uResourceManager.Init();
-                for (int i = 0; i < uLoader.ModelsTest.Length; i++)
+                uLoader.UseStaticPropFlag = EditorGUILayout.ToggleLeft("Load static bones", uLoader.UseStaticPropFlag);
+                uLoader.UseHitboxesOnModel = EditorGUILayout.ToggleLeft("Load hitboxes model", uLoader.UseHitboxesOnModel);
+                uLoader.DrawArmature = EditorGUILayout.ToggleLeft("Debug skeleton / bones", uLoader.DrawArmature);
+                uLoader.ModelPath = EditorGUILayout.TextField("Model:", uLoader.ModelPath);
+                if (GUILayout.Button("Load StudioModel", EditorStyles.toolbarButton))
                 {
-                    uResourceManager.LoadModel(uLoader.ModelsTest[i], uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                    uLoader.Clear();
+                    uResourceManager.Init();
+                    uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                    uResourceManager.ExportFromCache();
+                    uResourceManager.CloseStreams();
                 }
-                uResourceManager.ExportFromCache();
-                uResourceManager.CloseStreams();
-            }
 
+                uLoader.SubModelPath = EditorGUILayout.TextField("Sub-Model: ", uLoader.SubModelPath);
+                if (GUILayout.Button("Load StudioModel + SubModel", EditorStyles.toolbarButton))
+                {
+                    uLoader.Clear();
+                    uResourceManager.Init();
+                    Transform mainMDL = uResourceManager.LoadModel(uLoader.ModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                    Transform subMDL = uResourceManager.LoadModel(uLoader.SubModelPath, uLoader.LoadAnims, uLoader.UseHitboxesOnModel);
+                    uResourceManager.ExportFromCache();
+                    uResourceManager.CloseStreams();
+
+                    foreach (SkinnedMeshRenderer SkinnedMesh in subMDL.GetComponentsInChildren<SkinnedMeshRenderer>())
+                        mainMDL.CreateSubModel(SkinnedMesh);
+
+                    UnityEngine.Object.DestroyImmediate(subMDL.gameObject, false);
+                }
+            }
             GUILayout.EndVertical();
             #endregion
+
+            GUILayout.Space(2);
 
             #region VMT
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("VMT Settings", EditorStyles.boldLabel);
+            GUILayout.BeginVertical("minibutton");
+            if (uLoader.VMTSettingsFoldout = EditorGUILayout.Foldout(uLoader.VMTSettingsFoldout, "VMT Settings", true, EditorStyles.miniButtonLeft))
+            {
+                uLoader.DebugMaterials = EditorGUILayout.ToggleLeft("Debug materials (Print VMT KeyValue data)", uLoader.DebugMaterials);
 
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Global Shaders", EditorStyles.boldLabel);
-            uLoader.DefaultShader = EditorGUILayout.TextField("Default Shader: ", uLoader.DefaultShader);
-            uLoader.LightmappedGenericShader = EditorGUILayout.TextField("LightmappedGeneric Shader: ", uLoader.LightmappedGenericShader);
-            uLoader.VertexLitGenericShader = EditorGUILayout.TextField("VertexLitGeneric Shader: ", uLoader.VertexLitGenericShader);
-            uLoader.WorldVertexTransitionShader = EditorGUILayout.TextField("WorldVertexTransition Shader: ", uLoader.WorldVertexTransitionShader);
-            uLoader.WorldTwoTextureBlend = EditorGUILayout.TextField("WorldTwoTextureBlend Shader: ", uLoader.WorldTwoTextureBlend);
-            uLoader.UnlitGeneric = EditorGUILayout.TextField("Unlit Shader: ", uLoader.UnlitGeneric);
-            GUILayout.EndVertical();
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("Global Shaders", EditorStyles.boldLabel);
+                uLoader.DefaultShader = EditorGUILayout.TextField("Default Shader: ", uLoader.DefaultShader);
+                uLoader.LightmappedGenericShader = EditorGUILayout.TextField("LightmappedGeneric Shader: ", uLoader.LightmappedGenericShader);
+                uLoader.VertexLitGenericShader = EditorGUILayout.TextField("VertexLitGeneric Shader: ", uLoader.VertexLitGenericShader);
+                uLoader.WorldVertexTransitionShader = EditorGUILayout.TextField("WorldVertexTransition Shader: ", uLoader.WorldVertexTransitionShader);
+                uLoader.WorldTwoTextureBlend = EditorGUILayout.TextField("WorldTwoTextureBlend Shader: ", uLoader.WorldTwoTextureBlend);
+                uLoader.UnlitGeneric = EditorGUILayout.TextField("Unlit Shader: ", uLoader.UnlitGeneric);
+                GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Additive Shaders", EditorStyles.boldLabel);
-            uLoader.AdditiveShader = EditorGUILayout.TextField("Additive Shader: ", uLoader.AdditiveShader);
-            GUILayout.EndVertical();
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("Additive Shaders", EditorStyles.boldLabel);
+                uLoader.AdditiveShader = EditorGUILayout.TextField("Additive Shader: ", uLoader.AdditiveShader);
+                GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Detail Shaders", EditorStyles.boldLabel);
-            uLoader.DetailShader = EditorGUILayout.TextField("Detail Shader: ", uLoader.DetailShader);
-            uLoader.DetailUnlitShader = EditorGUILayout.TextField("Unlit Shader: ", uLoader.DetailUnlitShader);
-            uLoader.DetailTranslucentShader = EditorGUILayout.TextField("Translucent Shader: ", uLoader.DetailTranslucentShader);
-            GUILayout.EndVertical();
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("Detail Shaders", EditorStyles.boldLabel);
+                uLoader.DetailShader = EditorGUILayout.TextField("Detail Shader: ", uLoader.DetailShader);
+                uLoader.DetailUnlitShader = EditorGUILayout.TextField("Unlit Shader: ", uLoader.DetailUnlitShader);
+                uLoader.DetailTranslucentShader = EditorGUILayout.TextField("Translucent Shader: ", uLoader.DetailTranslucentShader);
+                GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Translucent Shaders", EditorStyles.boldLabel);
-            uLoader.TranslucentShader = EditorGUILayout.TextField("Translucent Shader: ", uLoader.TranslucentShader);
-            uLoader.TranslucentUnlitShader = EditorGUILayout.TextField("Unlit Shader: ", uLoader.TranslucentUnlitShader);
-            GUILayout.EndVertical();
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("Translucent Shaders", EditorStyles.boldLabel);
+                uLoader.TranslucentShader = EditorGUILayout.TextField("Translucent Shader: ", uLoader.TranslucentShader);
+                uLoader.TranslucentUnlitShader = EditorGUILayout.TextField("Unlit Shader: ", uLoader.TranslucentUnlitShader);
+                GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("AlphaTest (Cutout) Shaders", EditorStyles.boldLabel);
-            uLoader.AlphaTestShader = EditorGUILayout.TextField("AlphaTest Shader: ", uLoader.AlphaTestShader);
-            GUILayout.EndVertical();
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("AlphaTest (Cutout) Shaders", EditorStyles.boldLabel);
+                uLoader.AlphaTestShader = EditorGUILayout.TextField("AlphaTest Shader: ", uLoader.AlphaTestShader);
+                GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("SelfIllum Shaders", EditorStyles.boldLabel);
-            uLoader.SelfIllumShader = EditorGUILayout.TextField("SelfIllum Shader: ", uLoader.SelfIllumShader);
-            GUILayout.EndVertical();
-
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("SelfIllum Shaders", EditorStyles.boldLabel);
+                uLoader.SelfIllumShader = EditorGUILayout.TextField("SelfIllum Shader: ", uLoader.SelfIllumShader);
+                GUILayout.EndVertical();
+            }
             GUILayout.EndVertical();
             #endregion
 
-            GUILayout.Space(10);
+            GUILayout.Space(2);
 
             #region Info
             GUILayout.BeginHorizontal("textfield");
 
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Version: 1.1 (Beta)\n\nSpecial thanks:\n\n->REDxEYE and ShadelessFox\n->ZeqMacaw (for Crowbar)\n->James King aka Metapyziks (for SourceUtils)\n->LogicAndTrick (for Sledge and Sledge-Formats)", EditorStyles.largeLabel);
+            GUILayout.Label("Version: 1.1 (Beta)\n\nSpecial thanks:\n\n->REDxEYE and ShadelessFox (for SourceIO & some help)\n->ZeqMacaw (for Crowbar)\n->James King aka Metapyziks (for SourceUtils)\n->LogicAndTrick (for Sledge and Sledge-Formats)", EditorStyles.largeLabel);
             GUILayout.FlexibleSpace();
 
             //GUILayout.EndHorizontal();
@@ -333,6 +396,16 @@ namespace uSource
 
     public class uLoader : MonoBehaviour
     {
+#if UNITY_EDITOR
+        public static Boolean GlobalSettingsFoldout = true;
+        public static Boolean ModSettingsFoldout = true;
+        public static Boolean BSPSettingsFoldout = true;
+        public static Boolean LightmapSettingsFoldout = true;
+        public static Boolean LightingSettingsFoldout = true;
+        public static Boolean MDLSettingsFoldout = true;
+        public static Boolean VMTSettingsFoldout = false;
+#endif
+
         #region Global Settings
         //Global settings
         public static String RootPath = @"F:\Games\Source Engine\Counter-Strike Source";
@@ -340,7 +413,7 @@ namespace uSource
         //"hl2_misc_dir", "hl2_textures_dir"
         //"bms_maps_dir", "bms_textures_dir", "bms_materials_dir", "bms_models_dir", "bms_misc_dir"
         //"hl2_misc_dir", "hl2_textures_dir", "hl2_materials_dir", "hl2_models_dir"
-        public static readonly String[][] DirPaks = new String[][]
+        public static String[][] DirPaks = new String[][]
         {
             new String[] { "cstrike_pak_dir" },
             new String[] { "hl2_misc_dir", "hl2_textures_dir" }
@@ -373,7 +446,7 @@ namespace uSource
         public static String MapName = "test_lights";
         public static Boolean ParseBSPPhysics = false;
         public static Boolean ParseStaticPropScale = false;
-        public static Boolean Use3DSkybox = false;
+        public static Boolean Use3DSkybox = true;
         public static Boolean ParseDecals = false;
         public static Boolean UseGammaLighting = true;
         public static Boolean UseLightmapsAsTextureShader = false;
@@ -477,7 +550,7 @@ namespace uSource
                 uResourceManager.ProjectPath = null;
 #endif
 
-            if(uResourceManager._providers != null)
+            if(uResourceManager.Providers != null)
             {
                 uResourceManager.CloseStreams();
                 uResourceManager.RemoveResourceProviders();
