@@ -28,9 +28,9 @@
 
 		void surf (Input IN, inout SurfaceOutput o) 
 		{
-			fixed4 baseColor = tex2D(_MainTex, IN.uv_MainTex) * _Color;
-			fixed4 secondColor = tex2D(_SecondTex, IN.uv_SecondTex) * _Color;
-			o.Albedo = lerp(baseColor.rgb, secondColor.rgb, IN.color.a);
+			fixed4 baseColor = tex2D(_MainTex, IN.uv_MainTex);
+			fixed4 secondColor = tex2D(_SecondTex, IN.uv_SecondTex);
+			o.Albedo = lerp(baseColor.rgb, secondColor.rgb, IN.color.a) * _Color;
 			//o.Alpha = baseColor.a;
 		}
 		ENDCG

@@ -32,9 +32,9 @@
 
 		void surf (Input IN, inout SurfaceOutput o) 
 		{
-			fixed4 baseColor = tex2D(_MainTex, IN.uv_MainTex) * _Color;
-			fixed4 secondColor = tex2D(_Detail, IN.uv_Detail) * _Color;
-			o.Albedo = TextureCombine(baseColor, secondColor, _DetailBlendMode, _DetailFactor);
+			fixed4 baseColor = tex2D(_MainTex, IN.uv_MainTex);
+			fixed4 secondColor = tex2D(_Detail, IN.uv_Detail);
+			o.Albedo = TextureCombine(baseColor, secondColor, _DetailBlendMode, _DetailFactor) * _Color;
 			//o.Alpha = baseColor.a;
 		}
 		ENDCG
