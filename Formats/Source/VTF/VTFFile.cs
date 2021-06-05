@@ -141,28 +141,29 @@ namespace uSource.Formats.Source.VTF
                 }
 
                 Boolean ConvertToBGRA32 = true;
+                Boolean hasAlpha = true;
                 switch (HighResImageFormat)
                 {
                     //Unity support this formats natively
                     case VTFImageFormat.IMAGE_FORMAT_A8:
                     case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
                     case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
-                    case VTFImageFormat.IMAGE_FORMAT_BGR565:
-                    case VTFImageFormat.IMAGE_FORMAT_RGB565:
                     case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
-                    case VTFImageFormat.IMAGE_FORMAT_DXT1:
                     case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
                     case VTFImageFormat.IMAGE_FORMAT_DXT3:
                     case VTFImageFormat.IMAGE_FORMAT_DXT5:
-                    case VTFImageFormat.IMAGE_FORMAT_RGB888:
-                    //case VtfImageFormat.Rgb888Bluescreen:
-                    //case VtfImageFormat.Bgr888:
-                    //case VtfImageFormat.Bgr888Bluescreen:
                     case VTFImageFormat.IMAGE_FORMAT_RGBA8888:
                     case VTFImageFormat.IMAGE_FORMAT_BGRA8888:
                     case VTFImageFormat.IMAGE_FORMAT_BGRX8888:
                     case VTFImageFormat.IMAGE_FORMAT_RGBA16161616F:
                     case VTFImageFormat.IMAGE_FORMAT_RGBA16161616:
+                        ConvertToBGRA32 = false;
+                        break;
+                    case VTFImageFormat.IMAGE_FORMAT_BGR565:
+                    case VTFImageFormat.IMAGE_FORMAT_RGB565:
+                    case VTFImageFormat.IMAGE_FORMAT_DXT1:
+                    case VTFImageFormat.IMAGE_FORMAT_RGB888:
+                        hasAlpha = false;
                         ConvertToBGRA32 = false;
                         break;
                 }
@@ -196,18 +197,15 @@ namespace uSource.Formats.Source.VTF
 
                 TextureFormat InternalFormat = TextureFormat.BGRA32;
                 Boolean needCompress = false;
-                Boolean hasAlpha = false;
                 switch (HighResImageFormat)
                 {
                     case VTFImageFormat.IMAGE_FORMAT_A8:
                         InternalFormat = TextureFormat.Alpha8;
-                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
                     case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
                         InternalFormat = TextureFormat.ARGB32;
-                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_BGR565:
@@ -217,28 +215,19 @@ namespace uSource.Formats.Source.VTF
 
                     case VTFImageFormat.IMAGE_FORMAT_BGRA4444:
                         InternalFormat = TextureFormat.RGBA4444;
-                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_DXT1:
-                        InternalFormat = TextureFormat.DXT1;
-                        break;
-
                     case VTFImageFormat.IMAGE_FORMAT_DXT1_ONEBITALPHA:
                         InternalFormat = TextureFormat.DXT1;
-                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_DXT3:
                     case VTFImageFormat.IMAGE_FORMAT_DXT5:
                         InternalFormat = TextureFormat.DXT5;
-                        hasAlpha = true;
                         break;
 
                     case VTFImageFormat.IMAGE_FORMAT_RGB888:
-                        //case VtfImageFormat.Rgb888Bluescreen:
-                        //case VtfImageFormat.Bgr888:
-                        //case VtfImageFormat.Bgr888Bluescreen:
                         InternalFormat = TextureFormat.RGB24;
                         break;
 
