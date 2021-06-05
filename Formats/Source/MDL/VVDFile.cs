@@ -14,6 +14,8 @@ namespace uSource.Formats.Source.MDL
         public vertexFileFixup_t[] VVD_Fixups;
         public Boolean HasTangents;
 
+        //TODO:
+        //Fix missed vertexes on some meshes. (on lod's & sometimes the main model)
         public VVDFile(Stream FileInput, MDLFile mdl)
         {
             using (uReader FileStream = new uReader(FileInput))

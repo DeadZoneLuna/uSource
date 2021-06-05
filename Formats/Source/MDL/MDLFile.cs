@@ -433,6 +433,13 @@ namespace uSource.Formats.Source.MDL
                             pMesh.subMeshCount = Model.Model.nummeshes;
 
                             pMesh.vertices = pVertices;
+
+                            if (pMesh.vertexCount <= 0)
+                            {
+                                Debug.LogWarning(String.Format("Mesh: \"{0}\" has no vertexes, skip building...", pMesh.name));
+                                continue;
+                            }
+
                             pMesh.normals = pNormals;
                             pMesh.uv = pUvBuffer;
 
@@ -468,6 +475,7 @@ namespace uSource.Formats.Source.MDL
                             #endif
 
                             Material[] pMaterials = new Material[pMesh.subMeshCount];
+
                             for (Int32 meshID = 0; meshID < Model.Model.nummeshes; meshID++)
                             {
                                 pMesh.SetTriangles(Model.IndicesPerLod[lodID][meshID], meshID);
