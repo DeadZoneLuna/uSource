@@ -76,13 +76,35 @@ namespace uSource.Formats.Source.MDL
 									FileStream.BaseStream.Position = pStripGroupOffset + pStripGroup.indexOffset;
 									Int16[] Indices = FileStream.ReadShortArray(pStripGroup.numIndices);
 
-									for (int stripID = 0; stripID < pStripGroup.numStrips; stripID++)
+									for (Int32 stripID = 0; stripID < pStripGroup.numStrips; stripID++)
 									{
 										StripHeader_t VTXStrip = new StripHeader_t();
 										Int64 VTXStripOffset = pStripGroupOffset + (27 * stripID) + pStripGroup.stripOffset;
 										FileStream.ReadTypeFixed(ref VTXStrip, 27, VTXStripOffset);
 
-										if ((VTXStrip.flags & VTXStripGroupTriListFlag) > 0)
+										//TODO??
+										//Temp fix missed triangles on meshes
+										if ((VTXStrip.flags & VTXStripGroupTriStripFlag) > 0)
+										{
+											for (Int32 j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices - 2; j++)
+											{
+												Int32[] add = j % 2 == 1 ? new[] { j + 1, j, j + 2 } : new[] { j, j + 1, j + 2 };
+												foreach (var idx in add)
+												{
+													pIndices.Add(Vertexes[Indices[idx]].origMeshVertId + MDLMesh.vertexoffset);
+												}
+											}
+										}
+										else
+										{
+											for (Int32 j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices; j++)
+											{
+												pIndices.Add(Vertexes[Indices[j]].origMeshVertId + MDLMesh.vertexoffset);
+											}
+										}
+
+										//TODO??
+										/*if ((VTXStrip.flags & VTXStripGroupTriListFlag) > 0)
 										{
 											for (var j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices; j++)
 											{
@@ -99,7 +121,7 @@ namespace uSource.Formats.Source.MDL
 													pIndices.Add(Vertexes[Indices[idx]].origMeshVertId + MDLMesh.vertexoffset);
 												}
 											}
-										}
+										}*/
 									}
 								}
 
