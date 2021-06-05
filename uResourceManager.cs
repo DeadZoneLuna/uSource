@@ -42,7 +42,7 @@ namespace uSource
                 return true;
             else
             {
-                String path = root + "/" + FilePath;//Path.Combine(root, FilePath);
+                String path = root + "/" + FilePath;
                 if (File.Exists(path))
                 {
                     uResourceManager.DirectoryCache.Add(FilePath, path);
@@ -61,7 +61,6 @@ namespace uSource
                 return currentFile = File.OpenRead(uResourceManager.DirectoryCache[FilePath]);
             }
 
-            //throw new FileLoadException(FilePath + " NOT FOUND!");
             return null;
         }
 
@@ -86,7 +85,7 @@ namespace uSource
             IPAK = new ZipFile(stream);
             files = new Dictionary<String, Int32>();
 
-            for(Int32 EntryID = 0; EntryID < IPAK.Count; EntryID++)
+            for (Int32 EntryID = 0; EntryID < IPAK.Count; EntryID++)
             {
                 ZipEntry entry = IPAK[EntryID];
                 if (entry.IsFile)
@@ -108,11 +107,8 @@ namespace uSource
         public Stream OpenFile(String FilePath)
         {
             if (ContainsFile(FilePath))
-            {
                 return IPAK.GetInputStream(files[FilePath]);
-            }
 
-            //throw new FileLoadException(FilePath + " NOT FOUND!");
             return null;
         }
 
@@ -150,19 +146,16 @@ namespace uSource
                 return VPK.Entries[FilePath].ReadAnyDataStream();
             }
 
-            //throw new FileLoadException(FilePath + " NOT FOUND!");
             return null;
         }
 
         public void CloseStreams()
         {
-            if(currentStream != null)
+            if (currentStream != null)
                 currentStream.Close();
 
             if (VPK != null)
-            {
                 VPK.Dispose();
-            }
 
             currentStream = null;
             VPK = null;
@@ -172,13 +165,7 @@ namespace uSource
 
     public class uResourceManager
     {
-#if UNITY_EDITOR
-        public static bool RefreshAssets;
-        public static String ProjectPath;
-#endif
-
-        public static readonly List<IResourceProvider> _providers = new List<IResourceProvider>();
-
+        #region Sub Folders & Extensions
         public static readonly String MapsSubFolder = "maps/";
         public static readonly String MapsExtension = ".bsp";
 
@@ -189,6 +176,8 @@ namespace uSource
             ".vvd",
             ".dx90.vtx",
             ".vtx",
+            ".dx80.vtx",
+            ".sw.vtx",
             ".ani",
             ".phy"
         };
@@ -198,6 +187,7 @@ namespace uSource
             ".vmt",
             ".vtf"
         };
+        #endregion
 
         //Cache
         public static Dictionary<String, String> DirectoryCache;
@@ -206,11 +196,15 @@ namespace uSource
         public static Dictionary<String, Texture2D[,]> TextureCache;
 
 #if UNITY_EDITOR
+        public static Boolean RefreshAssets;
+        public static String ProjectPath;
         public static String uSourceSavePath;
         public static String TexExportType;
         public static List<String[,]> TexExportCache;
         public static List<Mesh> UV2GenerateCache;
 #endif
+
+        public static readonly List<IResourceProvider> Providers = new List<IResourceProvider>();
 
         public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
         public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
@@ -271,7 +265,7 @@ namespace uSource
 
             if (mainProvider != null)
             {
-                _providers.Insert(0, mainProvider);
+                Providers.Insert(0, mainProvider);
                 return;
             }
 
@@ -281,14 +275,13 @@ namespace uSource
 
         public static void Init(String RootPath, String ModFolder, String[] DirPaks)
         {
-            //UnityEngine.Profiling.Profiler.BeginSample("Init Manager");
-
-            //Init root path with mods
+            //Initializing mod folder to provider cache (to use find resources from mod folder before)
             String FullPath = slashesRegex.Replace(RootPath + "/" + ModFolder + "/", "/");
 
             if (Directory.Exists(FullPath))
-                _providers.Add(new DirProvider(FullPath));
+                Providers.Add(new DirProvider(FullPath));
 
+            //Initializing additional VPK's from mod folder (to use find resources from VPK's after mod folder)
             for (Int32 pakID = 0; pakID < DirPaks.Length; pakID++)
             {
                 String vpkFile = DirPaks[pakID];
@@ -297,34 +290,33 @@ namespace uSource
 
                 if (File.Exists(dirPath))
                 {
-                    _providers.Add(new VPKProvider(dirPath));
+                    Providers.Add(new VPKProvider(dirPath));
                     continue;
                 }
             }
-            //UnityEngine.Profiling.Profiler.EndSample();
         }
 
         public static void AddResourceProvider(IResourceProvider provider)
         {
-            _providers.Add(provider);
+            Providers.Add(provider);
         }
 
         public static void RemoveResourceProvider(IResourceProvider provider)
         {
-            _providers.Remove(provider);
+            Providers.Remove(provider);
         }
 
         public static void RemoveResourceProviders()
         {
-            _providers.RemoveRange(0, _providers.Count);
+            Providers.RemoveRange(0, Providers.Count);
         }
 
         public static Boolean ContainsFile(String FileName, String SubFolder, String FileExtension)
         {
             String FilePath = NormalizePath(FileName, SubFolder, FileExtension);
-            for (Int32 i = 0; i < _providers.Count; i++)
+            for (Int32 i = 0; i < Providers.Count; i++)
             {
-                if (_providers[i].ContainsFile(FilePath))
+                if (Providers[i].ContainsFile(FilePath))
                     return true;
             }
 
@@ -333,22 +325,22 @@ namespace uSource
 
         public static Stream OpenFile(String FilePath)
         {
-            for (Int32 i = 0; i < _providers.Count; i++)
+            for (Int32 i = 0; i < Providers.Count; i++)
             {
-                if (_providers[i].ContainsFile(FilePath))
+                if (Providers[i].ContainsFile(FilePath))
                 {
-                    return _providers[i].OpenFile(FilePath);
+                    return Providers[i].OpenFile(FilePath);
                 }
             }
 
-            return _providers[0].OpenFile(FilePath);
+            return Providers[0].OpenFile(FilePath);
         }
 
         public static void CloseStreams()
         {
-            for (Int32 i = 0; i < _providers.Count; i++)
+            for (Int32 i = 0; i < Providers.Count; i++)
             {
-                _providers[i].CloseStreams();
+                Providers[i].CloseStreams();
             }
         }
         #endregion
@@ -372,7 +364,7 @@ namespace uSource
                 using (Stream BSPStream = TempFile)
                 {
                     if (BSPStream == null)
-                    { 
+                    {
                         CloseStreams();
                         RemoveResourceProviders();
                         throw new FileLoadException(FileName + " NOT FOUND!");
@@ -411,16 +403,20 @@ namespace uSource
 
         public static Transform LoadModel(String ModelPath, Boolean WithAnims = false, Boolean withHitboxes = false, Boolean GenerateUV2 = false)
         {
+            //Normalize path before do magic here 
+            //(Cuz some paths uses different separators or levels... so we normalize paths always)
             String TempPath = NormalizePath(ModelPath, ModelsSubFolder, ModelsExtension[0], false);
 
+            //If model exist in cache, return it
             if (ModelCache.ContainsKey(TempPath))
                 return UnityEngine.Object.Instantiate(ModelCache[TempPath]);
+            //Else begin try load model
 
             Transform Model;
-
             String FileName = TempPath + ModelsExtension[0];
             try
             {
+                //Try load model
                 MDLFile MDLFile;
                 using (Stream mdlStream = OpenFile(FileName))
                 {
@@ -430,6 +426,7 @@ namespace uSource
                     MDLFile = new MDLFile(mdlStream, WithAnims, withHitboxes);
                 }
 
+                //Try load vertexes
                 FileName = TempPath + ModelsExtension[1];
                 VVDFile VVDFile;
                 using (Stream vvdStream = OpenFile(FileName))
@@ -444,33 +441,50 @@ namespace uSource
                     }
                 }
 
+                VTXFile VTXFile = null;
                 if (MDLFile.meshExist)
                 {
-                    FileName = TempPath + ModelsExtension[2];
                     if (VVDFile != null)
                     {
-                        using (Stream vtxStream = OpenFile(FileName))
+                        //Here we try find all vtx pattern, from high to low
+                        for (Int32 TryVTXID = 0; TryVTXID < 4; TryVTXID++)
                         {
-                            if (vtxStream != null)
-                                new VTXFile(vtxStream, MDLFile, VVDFile);
-                            else
+                            FileName = TempPath + ModelsExtension[2 + TryVTXID];
+                            using (Stream vtxStream = OpenFile(FileName))
                             {
-                                Debug.LogWarning(FileName + " NOT FOUND!");
-                                MDLFile.meshExist = false;
+                                if (vtxStream != null)
+                                {
+                                    MDLFile.meshExist = true;
+                                    VTXFile = new VTXFile(vtxStream, MDLFile, VVDFile);
+                                    break;
+                                }
                             }
+                        }
+
+                        //If at least one VTX was not found, notify about that
+                        if (VTXFile == null)
+                        {
+                            Debug.LogWarning(FileName + " NOT FOUND!");
+                            MDLFile.meshExist = false;
                         }
                     }
                 }
 
+                //Try build model
                 Model = MDLFile.BuildModel(GenerateUV2);
+
+                //Reset all
                 MDLFile = null;
                 VVDFile = null;
+                VTXFile = null;
 
+                //Add model to cache (to load faster than rebuild models again, again and again...)
                 ModelCache.Add(TempPath, Model);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Model = new GameObject(TempPath).transform;
+                //notify about error
                 Debug.LogError(String.Format("{0}: {1}", TempPath, ex));
                 ModelCache.Add(TempPath, Model);
                 return Model;
@@ -481,8 +495,11 @@ namespace uSource
 
         public static VMTFile LoadMaterial(String MaterialPath)
         {
+            //Normalize path before do magic here 
+            //(Cuz some paths uses different separators or levels... so we normalize paths always)
             String TempPath = NormalizePath(MaterialPath, MaterialsSubFolder, MaterialsExtension[0], false);
 
+            //If material exist in cache, return it
             if (MaterialCache.ContainsKey(TempPath))
             {
                 VMTFile VMTCache = MaterialCache[TempPath];
@@ -492,16 +509,19 @@ namespace uSource
 
                 return VMTCache;
             }
+            //Else begin try load & parse material
 
             String FileName = TempPath + MaterialsExtension[0];
             VMTFile VMTFile;
             using (Stream vmtStream = OpenFile(FileName))
             {
+                //If at least one material was not found, notify about that
                 if (vmtStream == null)
                 {
                     Debug.LogWarning(FileName + " NOT FOUND!");
                     return new VMTFile(null, FileName);
                 }
+                //Else try load & parse material
 
                 try
                 {
@@ -512,13 +532,15 @@ namespace uSource
                     else
                         VMTFile = new VMTFile(null, FileName);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
+                    //notify about error
                     Debug.LogError(String.Format("{0}: {1}", TempPath, ex.Message));
                     return new VMTFile(null, FileName);
                 }
             }
 
+            //Add material to cache (to load faster than reparse material again, again and again...)
             MaterialCache.Add(TempPath, VMTFile);
             return VMTFile;
         }
@@ -527,11 +549,14 @@ namespace uSource
         {
             String TempPath;
 
+            //Normalize paths before do magic here 
+            //(Cuz some paths uses different separators or levels... so we normalize paths always)
             TempPath = NormalizePath(TexturePath, MaterialsSubFolder, MaterialsExtension[1], false);
             if (AltTexture != null)
                 AltTexture = NormalizePath(AltTexture, MaterialsSubFolder, MaterialsExtension[1]);
 
 #if UNITY_EDITOR
+            //Add texture to export process from material (if ImmediatelyConvert is false & save assets option enabled)
             if (uLoader.SaveAssetsToUnity && !ImmediatelyConvert)
             {
                 if (ExportData != null)
@@ -539,11 +564,13 @@ namespace uSource
             }
 #endif
 
+            //If texture exist in cache, return it
             if (TextureCache.ContainsKey(TempPath))
                 return TextureCache[TempPath];
+            //Else begin try load texture
 
 #if UNITY_EDITOR
-            //Try load asset from project (if exist)
+            //Try load texture from project (if exist & ImmediatelyConvert is false & save assets option enabled))
             if (uLoader.SaveAssetsToUnity && ImmediatelyConvert)
             {
                 String FilePath = uSourceSavePath + TempPath + TexExportType;
@@ -560,6 +587,7 @@ namespace uSource
             String FileName = TempPath + MaterialsExtension[1];
             using (Stream vtfStream = OpenFile(FileName))
             {
+                //If at least one texture was not found, notify about that
                 if (vtfStream == null)
                 {
                     Debug.LogWarning(FileName + " NOT FOUND!");
@@ -569,6 +597,7 @@ namespace uSource
                     else
                         return LoadTexture(AltTexture);
                 }
+                //Else try load texture
 
                 try
                 {
@@ -576,12 +605,14 @@ namespace uSource
                 }
                 catch (Exception ex)
                 {
+                    //notify about error
                     Debug.LogError(String.Format("{0}: {1}", TempPath, ex.Message));
                     return new[,] { { Texture2D.whiteTexture } };
                 }
             }
 
 #if UNITY_EDITOR
+            //Try save texture to project (if ImmediatelyConvert is true & save assets option enabled)
             if (uLoader.SaveAssetsToUnity && ImmediatelyConvert)
             {
                 if (uLoader.ExportTextureAsPNG)
@@ -591,6 +622,7 @@ namespace uSource
             }
 #endif
 
+            //Add texture to cache (to load faster than rebuild texture again, again and again...)
             TextureCache.Add(TempPath, VTFFile.Frames);
 
             return VTFFile.Frames;
@@ -600,7 +632,7 @@ namespace uSource
         public static void ExportFromCache()
         {
 #if UNITY_EDITOR
-            if(uLoader.DebugTime != null)
+            if (uLoader.DebugTime != null)
                 uLoader.DebugTime.Restart();
 
             Int32 CurrentFile = 0;
@@ -617,7 +649,7 @@ namespace uSource
                 UnwrapProps.angleError = uLoader.UV2AngleErrorProps / 100.0f;
                 UnwrapProps.areaError = uLoader.UV2AreaErrorProps / 100.0f;
 
-                for(Int32 MeshID = 0; MeshID < TotalFiles; MeshID++)
+                for (Int32 MeshID = 0; MeshID < TotalFiles; MeshID++)
                 {
                     UnityEditor.EditorUtility.DisplayProgressBar(String.Format("Generate UV2: {0}/{1}", MeshID, TotalFiles), "In Progress: " + UV2GenerateCache[MeshID].name, (float)MeshID / TotalFiles);
                     UnityEditor.Unwrapping.GenerateSecondaryUVSet(UV2GenerateCache[MeshID], UnwrapProps);
