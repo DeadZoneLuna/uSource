@@ -9,6 +9,8 @@ using uSource.Example;
 
 namespace uSource.Formats.Source.VBSP
 {
+    //TODO:
+    //Rework this & make universal
     public static class EntitySetup
     {
         public static void Configure(this Transform transform, List<String> Data)
@@ -78,8 +80,9 @@ namespace uSource.Formats.Source.VBSP
                 lensFlare.flare = VBSPFile.GlowFlare;
                 lensFlare.brightness = Converters.ToSingle(Data[Data.FindIndex(n => n == "scale") + 1]);
                 lensFlare.fadeSpeed = Converters.ToSingle(Data[Data.FindIndex(n => n == "GlowProxySize") + 1]);
-                //String[] rendercolor = Data[Data.FindIndex(n => n == "rendercolor") + 1].Split(' ');
-                lensFlare.color = Converters.ToColor32(Data[Data.FindIndex(n => n == "rendercolor") + 1]);//new Color32(Byte.Parse(rendercolor[0]), Byte.Parse(rendercolor[1]), Byte.Parse(rendercolor[2]), 0);
+                lensFlare.color = Converters.ToColor32(Data[Data.FindIndex(n => n == "rendercolor") + 1]);
+
+                return;
             }
 #endif
 
@@ -106,6 +109,7 @@ namespace uSource.Formats.Source.VBSP
                 skyCamera.depth = -2;
                 skyCamera.clearFlags = CameraClearFlags.Skybox;
                 //Setup 3DSkybox
+                return;
             }
             //3D Skybox
 
@@ -127,6 +131,8 @@ namespace uSource.Formats.Source.VBSP
 
                     UpdateEquatorColor();
                 }
+
+                return;
             }
 
             //Lights parsing
@@ -315,6 +321,8 @@ namespace uSource.Formats.Source.VBSP
                             Light.shadowBias = 0.01f;
                     }
                 }
+
+                return;
             }
 
             //Lights
@@ -375,12 +383,17 @@ namespace uSource.Formats.Source.VBSP
                 }
             }
 
-            if (Classname.Contains("prop_") || Classname.Contains("npc_"))
+            if (Classname.Contains("prop_") || Classname.Contains("npc_"))// || Classname.Equals("asw_door"))
             {
                 string ModelName = Data[Data.FindIndex(n => n == "model") + 1];
 
                 if (!string.IsNullOrEmpty(ModelName))
+                {
                     uResourceManager.LoadModel(ModelName, uLoader.LoadAnims, uLoader.UseHitboxesOnModel).SetParent(transform, false);
+                    return;
+                }
+
+                return;
             }
 
             if (uLoader.ParseDecals && Classname.Equals("infodecal"))
