@@ -9,22 +9,24 @@ namespace uSource.Formats.Source.VTF
     public class VMTFile
     {
         public String FileName = "";
-        public static int TransparentQueue = 3001;
+        public static Int32 TransparentQueue = 3001;
 
-        public KeyValues.Entry this[string shader] => _keyValues[shader];
-        public KeyValues _keyValues;//static Dictionary<String, String> Items;
-        public String _Shader;
+        public KeyValues.Entry this[String shader] => KeyValues[shader];
+        public KeyValues KeyValues;
+        public String ShaderType;
         public Material Material;
-        public VMTFile includeVmt;
+        public VMTFile Include;
         public Material DefaultMaterial;
 
+        //TODO
         public Boolean HasAnimation;
 
         public void SetupAnimations(ref AnimatedTexture ControlScript)
         {
             ControlScript.AnimatedTextureFramerate = GetSingle("animatedtextureframerate");
-            //ControlScript.Frames = VTFRead.Frames;
+            //ControlScript.Frames = VTFFile.Frames;
         }
+        //TODO
 
         void MakeDefaultMaterial()
         {
@@ -64,20 +66,19 @@ namespace uSource.Formats.Source.VTF
 
             try
             {
-                _keyValues = KeyValues.FromStream(stream);
+                KeyValues = KeyValues.FromStream(stream);
             }
             catch (Exception ex)
             {
                 MakeDefaultMaterial();
-
                 Debug.LogError(ex);
                 Material = DefaultMaterial;
             }
 
-            _Shader = _keyValues.Keys.First();
+            ShaderType = KeyValues.Keys.First();
 
             //If shader is null, return
-            if (string.IsNullOrEmpty(_Shader))
+            if (string.IsNullOrEmpty(ShaderType))
             {
                 MakeDefaultMaterial();
                 return;
@@ -86,34 +87,34 @@ namespace uSource.Formats.Source.VTF
 
         public void CreateMaterial()
         {
-            if (_keyValues == null)
+            if (KeyValues == null)
             {
                 MakeDefaultMaterial();
                 return;
             }
 
-            //VMTRead includeVmt;
+            #region Patch "Shader"
+            if (ContainsParma("replace"))
+                this[ShaderType].MergeFrom(this[ShaderType]["replace"], true);
+
             if (ContainsParma("include"))
             {
-                includeVmt = uResourceManager.LoadMaterial(GetParma("include"));
-                this[_Shader].MergeFrom(includeVmt[includeVmt._Shader], true);
-                //_Shader = includeVmt._Shader;
+                Include = uResourceManager.LoadMaterial(GetParma("include"));
+                this[ShaderType].MergeFrom(Include[Include.ShaderType], false);
             }
 
-            if(ContainsParma("insert"))
-                this[_Shader].MergeFrom(this[_Shader]["insert"], false);
-
-            if (ContainsParma("replace"))
-                this[_Shader].MergeFrom(this[_Shader]["replace"], true);
+            if (ContainsParma("insert"))
+                this[ShaderType].MergeFrom(this[ShaderType]["insert"], false);
+            #endregion
 
             if (ContainsParma("$fallbackmaterial"))
             {
-                includeVmt = uResourceManager.LoadMaterial(GetParma("$fallbackmaterial"));
-                this[_Shader].MergeFrom(includeVmt[includeVmt._Shader], true);
-                //Material = ResourceManager.LoadMaterial(Items["$fallbackmaterial"]).Material;
+                Include = uResourceManager.LoadMaterial(GetParma("$fallbackmaterial"));
+                this[ShaderType].MergeFrom(Include[Include.ShaderType], true);
             }
 
-            HasAnimation = ContainsParma("animatedtexture") && GetParma("animatedtexturevar") == "$basetexture";
+            //TODO
+            //HasAnimation = ContainsParma("animatedtexture") && GetParma("animatedtexturevar") == "$basetexture";
 
 #if UNITY_EDITOR
             //Try load asset from project (if exist)
@@ -129,29 +130,25 @@ namespace uSource.Formats.Source.VTF
             String PropertyName;
             Texture2D BaseTexture = null;
             Boolean HasAlpha = false;
-            if (ContainsParma("$basetexture"))
+            if (ContainsParma("$basetexture") || ContainsParma("$envmapmask"))
             {
                 TextureName = GetParma("$basetexture");
+                if (TextureName == null || TextureName.Length == 0)
+                    TextureName = GetParma("$envmapmask");
+
                 BaseTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
-                HasAlpha = BaseTexture.alphaIsTransparency;
+
+                //To avoid "NullReferenceException"
+                if(BaseTexture != null)
+                    HasAlpha = BaseTexture.alphaIsTransparency;
             }
 
-            if (BaseTexture == null && ContainsParma("$envmapmask"))
-            {
-                TextureName = GetParma("$envmapmask");
-                BaseTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
-                HasAlpha = BaseTexture.alphaIsTransparency;
-            }
-
-            Material = new Material(GetShader(includeVmt == null ? _Shader : includeVmt._Shader, HasAlpha));
+            Material = new Material(GetShader(Include == null ? ShaderType : Include.ShaderType, HasAlpha));
             Material.name = FileName;
             Material.color = GetColor();
 
             if(BaseTexture != null)
                 Material.mainTexture = BaseTexture;
-
-            //if (Material.mainTexture == null && ContainsParma("$bumpmap"))
-            //    Material.mainTexture = ResourceManager.LoadTexture(GetParma("$bumpmap"))[0];
 
             if (ContainsParma("$basetexture2"))
             {
@@ -177,32 +174,21 @@ namespace uSource.Formats.Source.VTF
 
             //Transparent
             if (IsTrue("$translucent"))
-            {
-                /*if (Material.HasProperty("_IsTranslucent"))
-                {
-                    Material.SetInt("_IsTranslucent", GetInteger("$translucent"));
-                    Material.SetInt("_Cull", 0);
-                    Material.SetInt("_ZState", 0);
-                }*/
-
                 Material.renderQueue = TransparentQueue++;
-            }
 
             //Cutout Transparent
             if (IsTrue("$alphatest"))
-            {
-                //if (Material.HasProperty("_AlphaTest"))
-                //    Material.SetInt("_AlphaTest", GetInteger("$alphatest"));
-
                 Material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
-            }
 
             //Cull mode state
+            //0 - Off (Double Sided)
+            //1 - Front (Front Sided)
+            //2 - Back (Back Sided)
             if (IsTrue("$nocull"))
             {
                 PropertyName = "_Cull";
                 if (Material.HasProperty(PropertyName))
-                    Material.SetInt(PropertyName, IsTrue("$nocull") ? 0 : 2);
+                    Material.SetInt(PropertyName, 0);
             }
 
             // Detail texture blend
@@ -239,12 +225,7 @@ namespace uSource.Formats.Source.VTF
                 }
             }
 
-            /*if (ContainsParma("$bumpmap"))
-            {
-                if (Material.HasProperty("_BumpMap"))
-                    Material.SetTexture("_BumpMap", uResourceManager.LoadTexture(GetParma("$bumpmap"))[0, 0]);
-            }*/
-
+            //TODO?
             //if (ContainsParma("$surfaceprop"))
             //    Material.name = Items["$surfaceprop"];
         }
@@ -319,7 +300,7 @@ namespace uSource.Formats.Source.VTF
 
         public Boolean ContainsParma(String parma)
         {
-            return this[_Shader].ContainsKey(parma);
+            return this[ShaderType].ContainsKey(parma);
         }
 
         public String GetParma(String parma)
@@ -327,7 +308,7 @@ namespace uSource.Formats.Source.VTF
             //if (string.IsNullOrEmpty(_Shader))
             //    throw new Exception("SHADER MISSING!");
 
-            return this[_Shader][parma];//float.Parse(Items[Data]);
+            return this[ShaderType][parma];//float.Parse(Items[Data]);
         }
 
         public Single GetSingle(String parma)
@@ -346,11 +327,11 @@ namespace uSource.Formats.Source.VTF
 
             if (ContainsParma("$color"))
             {
-                MaterialColor = this[_Shader]["$color"];//.Replace(".", "").Trim('[', ']', '{', '}').Trim().Split(' ');
+                MaterialColor = this[ShaderType]["$color"];//.Replace(".", "").Trim('[', ']', '{', '}').Trim().Split(' ');
             }
 
             if (ContainsParma("$alpha"))
-                MaterialColor.a = (byte)(255 * (float)this[_Shader]["$alpha"]);
+                MaterialColor.a = (byte)(255 * (float)this[ShaderType]["$alpha"]);
 
             return MaterialColor;
         }
@@ -358,7 +339,7 @@ namespace uSource.Formats.Source.VTF
         public bool IsTrue(string Input)
         {
             if (ContainsParma(Input))
-                return this[_Shader][Input] == true;
+                return this[ShaderType][Input] == true;
 
             return false;
         }

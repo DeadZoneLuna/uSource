@@ -346,7 +346,7 @@ namespace uSource
             GUILayout.BeginHorizontal("textfield");
 
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Version: 1.1 (Beta)\n\nSpecial thanks:\n\n->REDxEYE and ShadelessFox (for SourceIO & some help)\n->ZeqMacaw (for Crowbar)\n->James King aka Metapyziks (for SourceUtils)\n->LogicAndTrick (for Sledge and Sledge-Formats)", EditorStyles.largeLabel);
+            GUILayout.Label("Version: " + uLoader.PluginVersion + "\n\nSpecial thanks:\n\n->REDxEYE and ShadelessFox (for SourceIO & some help)\n->ZeqMacaw (for Crowbar)\n->James King aka Metapyziks (for SourceUtils)\n->LogicAndTrick (for Sledge and Sledge-Formats)", EditorStyles.largeLabel);
             GUILayout.FlexibleSpace();
 
             //GUILayout.EndHorizontal();
@@ -396,6 +396,7 @@ namespace uSource
 
     public class uLoader : MonoBehaviour
     {
+        public static String PluginVersion = "1.1 Beta";
 #if UNITY_EDITOR
         public static Boolean GlobalSettingsFoldout = true;
         public static Boolean ModSettingsFoldout = true;
@@ -443,7 +444,7 @@ namespace uSource
 
         #region BSP
         //BSP
-        public static String MapName = "test_lights";
+        public static String MapName = "test_angles";
         public static Boolean ParseBSPPhysics = false;
         public static Boolean ParseStaticPropScale = false;
         public static Boolean Use3DSkybox = true;
@@ -477,7 +478,7 @@ namespace uSource
         //models/weapons/v_models/v_smg_sniper
         //props_c17/door01_left
         //survivors/survivor_gambler
-        public static String ModelPath = @"weapons/v_rif_ak47";
+        public static String ModelPath = @"props/de_aztec/hr_aztec/aztec_stairs/aztec_stair_02_edge_64wide_footer_03.mdl";
         public static String SubModelPath = @"weapons/ct_arms";
         public static Boolean UseStaticPropFlag = false;
         public static Boolean UseHitboxesOnModel = false;

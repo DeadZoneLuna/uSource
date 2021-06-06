@@ -15,12 +15,12 @@ namespace uSource.Formats.Source.VTF
         StringBuilder builder;
         public void Init(VMTFile VMT)
         {
-            if (VMT != null && VMT._keyValues != null)
+            if (VMT != null && VMT.KeyValues != null)
             {
                 if (builder == null)
                     builder = new StringBuilder();
 
-                foreach (var a in (VMT.includeVmt != null ? VMT.includeVmt : VMT)._keyValues)
+                foreach (var a in (VMT.Include != null ? VMT.Include : VMT).KeyValues)
                 {
                     builder.AppendLine(VMT.FileName);
                     builder.AppendLine(a.Key);
