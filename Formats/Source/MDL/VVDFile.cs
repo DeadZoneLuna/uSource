@@ -35,14 +35,14 @@ namespace uSource.Formats.Source.MDL
                 HasTangents = VVD_Header.tangentDataStart != 0;
 
                 //"HasTagents" used to avoid non-zero length
-                Int64 TotalVerts = (HasTangents ? VVD_Header.tangentDataStart - VVD_Header.vertexDataStart : FileStream.InputStream.Length - VVD_Header.vertexDataStart) / 48;
-                mstudiovertex_t[] tempVerts = new mstudiovertex_t[TotalVerts];
+                //Int64 TotalVerts = (HasTangents ? VVD_Header.tangentDataStart - VVD_Header.vertexDataStart : FileStream.InputStream.Length - VVD_Header.vertexDataStart) / 48;
+                mstudiovertex_t[] tempVerts = new mstudiovertex_t[VVD_Header.numLODVertexes[0]];
                 FileStream.ReadArrayFixed(ref tempVerts, 48, VVD_Header.vertexDataStart);
 
                 VVD_Vertexes = new mstudiovertex_t[VVD_Header.numLODs][];
                 List<mstudiovertex_t> TempVerts = new List<mstudiovertex_t>();
 
-                for (var LODID = 0; LODID < VVD_Header.numLODs; ++LODID)
+                for (Int32 LODID = 0; LODID < VVD_Header.numLODs; ++LODID)
                 {
                     if (VVD_Header.numFixups == 0)
                     {
@@ -52,7 +52,7 @@ namespace uSource.Formats.Source.MDL
 
                     TempVerts.Clear();
 
-                    foreach (var VertexFixup in VVD_Fixups)
+                    foreach (vertexFileFixup_t VertexFixup in VVD_Fixups)
                     {
                         if (VertexFixup.lod >= LODID)
                         {

@@ -43,6 +43,9 @@ namespace uSource.Formats.Source.MDL
 						Int64 pModelOffset = pBodypartOffset + (8 * modelID) + pBodypart.modelOffset;
 						FileStream.ReadTypeFixed(ref pModel, 8, pModelOffset);
 
+						//TODO: Fix lod's & add feature parsing to Unity "LOD Group"
+						MDLPart.Models[modelID].NumLODs = 1;//pModel.numLODs;
+
 						//TODO: Fix all lod's per model to use other lod's than 1 (VVD / MDL)
 						for (Int32 LODID = 0; LODID < 1; LODID++)
 						{

@@ -269,7 +269,11 @@ namespace uSource.Formats.Source.MDL
                     Int32 pBodypartOffset = MDL_Header.bodypart_offset + (16 * bodypartID);
                     FileStream.ReadTypeFixed(ref pBodypart, 16, pBodypartOffset);
 
-                    MDL_Bodyparts[bodypartID].Name = FileStream.ReadNullTerminatedString(pBodypartOffset + pBodypart.sznameindex);
+                    if (pBodypart.sznameindex != 0)
+                        MDL_Bodyparts[bodypartID].Name = FileStream.ReadNullTerminatedString(pBodypartOffset + pBodypart.sznameindex);
+                    else
+                        MDL_Bodyparts[bodypartID].Name = String.Empty;
+
                     MDL_Bodyparts[bodypartID].Models = new StudioModel[pBodypart.nummodels];
 
                     for (Int32 modelID = 0; modelID < pBodypart.nummodels; modelID++)
@@ -280,12 +284,20 @@ namespace uSource.Formats.Source.MDL
 
                         MDL_Bodyparts[bodypartID].Models[modelID].isBlank = (pModel.numvertices <= 0 || pModel.nummeshes <= 0);
                         MDL_Bodyparts[bodypartID].Models[modelID].Model = pModel;
+
+                        //TODO: 
+                        //props/de_aztec/hr_aztec/aztec_stairs/aztec_stair_02_edge_64wide_footer_03.mdl 
+                        //props/de_aztec/hr_aztec/aztec_walls/aztec_wall_stone01_bridge_foundation_02.mdl - no vertexes, why? D:
                         MDL_Bodyparts[bodypartID].Models[modelID].Meshes = new mstudiomesh_t[pModel.nummeshes];
                         for (Int32 meshID = 0; meshID < pModel.nummeshes; meshID++)
                         {
                             mstudiomesh_t pMesh = new mstudiomesh_t();
                             Int64 pMeshOffset = pModelOffset + (116 * meshID) + pModel.meshindex;
                             FileStream.ReadTypeFixed(ref pMesh, 116, pMeshOffset);
+
+                            //TODO: Temp fix, if "no vertexes" on model (but model has vertexes... it's didn't better way to fix.. but works now)
+                            if (pMesh.VertexData.numlodvertices[0] == 0)
+                                pMesh.VertexData.numlodvertices[0] = pMesh.numvertices;
 
                             MDL_Bodyparts[bodypartID].Models[modelID].Meshes[meshID] = pMesh;
                         }
@@ -402,7 +414,7 @@ namespace uSource.Formats.Source.MDL
                         if (Model.isBlank)
                             continue;
 
-                        for (Int32 lodID = 0; lodID < 1; lodID++)
+                        for (Int32 lodID = 0; lodID < Model.NumLODs; lodID++)
                         {
                             mstudiovertex_t[] Vertexes = Model.VerticesPerLod[lodID];
 
@@ -436,7 +448,7 @@ namespace uSource.Formats.Source.MDL
 
                             if (pMesh.vertexCount <= 0)
                             {
-                                Debug.LogWarning(String.Format("Mesh: \"{0}\" has no vertexes, skip building...", pMesh.name));
+                                Debug.LogWarning(String.Format("Mesh: \"{0}\" has no vertexes, skip building... (MDL Version: {1})", pMesh.name, MDL_Header.version));
                                 continue;
                             }
 
