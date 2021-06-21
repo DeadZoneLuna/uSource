@@ -592,6 +592,7 @@ namespace uSource.Formats.Source.MDL
             public Boolean isBlank;
             public mstudiomodel_t Model;
             public Int32 NumLODs;
+            public ModelLODHeader_t[] LODData;
             public mstudiomesh_t[] Meshes;
             public Dictionary<Int32, List<Int32>>[] IndicesPerLod;
             public mstudiovertex_t[][] VerticesPerLod;

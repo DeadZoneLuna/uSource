@@ -12,7 +12,8 @@ namespace uSource.Formats.Source.MDL
         public vertexFileHeader_t VVD_Header;
         public mstudiovertex_t[][] VVD_Vertexes;
         public vertexFileFixup_t[] VVD_Fixups;
-        public Boolean HasTangents;
+        //TODO
+        //public Boolean HasTangents;
 
         //TODO:
         //Fix missed vertexes on some meshes. (on lod's & sometimes the main model)
@@ -32,7 +33,7 @@ namespace uSource.Formats.Source.MDL
                 }
 
                 //TODO
-                HasTangents = VVD_Header.tangentDataStart != 0;
+                //HasTangents = VVD_Header.tangentDataStart != 0;
 
                 //"HasTagents" used to avoid non-zero length
                 //Int64 TotalVerts = (HasTangents ? VVD_Header.tangentDataStart - VVD_Header.vertexDataStart : FileStream.InputStream.Length - VVD_Header.vertexDataStart) / 48;
@@ -52,11 +53,11 @@ namespace uSource.Formats.Source.MDL
 
                     TempVerts.Clear();
 
-                    foreach (vertexFileFixup_t VertexFixup in VVD_Fixups)
+                    for (Int32 FixupID = 0; FixupID < VVD_Fixups.Length; FixupID++)
                     {
-                        if (VertexFixup.lod >= LODID)
+                        if (VVD_Fixups[FixupID].lod >= LODID)
                         {
-                            TempVerts.AddRange(tempVerts.Skip(VertexFixup.sourceVertexID).Take(VertexFixup.numVertexes));
+                            TempVerts.AddRange(tempVerts.Skip(VVD_Fixups[FixupID].sourceVertexID).Take(VVD_Fixups[FixupID].numVertexes));
                         }
                     }
 

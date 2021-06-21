@@ -20,124 +20,145 @@ namespace uSource.Formats.Source.MDL
 				if (VTX_Header.checkSum != MDL_Header.checksum)
 					throw new FileLoadException(String.Format("{0}: Does not match the checksum in the .mdl", MDL_Header.Name));
 
-				Int32[] vertexoffset = new Int32[8];
-				for (Int32 bodypartID = 0; bodypartID < MDL_Header.bodypart_count; bodypartID++)
+                #region BodyParts
+                Int32[] VertexLODOffsets = new Int32[8];
+				for (Int32 BodypartID = 0; BodypartID < MDL_Header.bodypart_count; BodypartID++)
 				{
-					BodyPartHeader_t pBodypart = new BodyPartHeader_t();
-					Int64 pBodypartOffset = VTX_Header.bodyPartOffset + (8 * bodypartID);
-					FileStream.ReadTypeFixed(ref pBodypart, 8, pBodypartOffset);
+					BodyPartHeader_t BodyPart = new BodyPartHeader_t();
+					Int64 BodyPartOffset = VTX_Header.bodyPartOffset + (8 * BodypartID);
+					FileStream.ReadTypeFixed(ref BodyPart, 8, BodyPartOffset);
 
-					StudioBodyPart MDLPart = StudioMDL.MDL_Bodyparts[bodypartID];
+					StudioBodyPart StudioBodyPart = StudioMDL.MDL_Bodyparts[BodypartID];
 
-					for (Int32 modelID = 0; modelID < pBodypart.numModels; modelID++)
+                    #region Models
+                    for (Int32 ModelID = 0; ModelID < BodyPart.numModels; ModelID++)
 					{
-						StudioModel MDLModel = MDLPart.Models[modelID];
+						StudioModel StudioModel = StudioBodyPart.Models[ModelID];
 
-						if (MDLModel.isBlank)
+						if (StudioModel.isBlank)
 						{
-							Debug.Log(String.Format("Model ID - {0} in bodypart \"{1}\" is blank, skip", modelID, MDLPart.Name));
+							Debug.Log(String.Format("Model ID - {0} in bodypart \"{1}\" is blank, skip", ModelID, StudioBodyPart.Name));
 							continue;
 						}
 
-						ModelHeader_t pModel = new ModelHeader_t();
-						Int64 pModelOffset = pBodypartOffset + (8 * modelID) + pBodypart.modelOffset;
-						FileStream.ReadTypeFixed(ref pModel, 8, pModelOffset);
+						ModelHeader_t Model = new ModelHeader_t();
+						Int64 ModelOffset = BodyPartOffset + (8 * ModelID) + BodyPart.modelOffset;
+						FileStream.ReadTypeFixed(ref Model, 8, ModelOffset);
 
-						//TODO: Fix lod's & add feature parsing to Unity "LOD Group"
-						MDLPart.Models[modelID].NumLODs = 1;//pModel.numLODs;
+						StudioBodyPart.Models[ModelID].NumLODs = Model.numLODs;
+						StudioBodyPart.Models[ModelID].LODData = new ModelLODHeader_t[Model.numLODs];
 
-						//TODO: Fix all lod's per model to use other lod's than 1 (VVD / MDL)
-						for (Int32 LODID = 0; LODID < 1; LODID++)
+                        #region LOD's
+                        //TODO: Strip unused vertexes on lower lod's ("first" lod is fine)
+                        for (Int32 LODID = 0; LODID < Model.numLODs; LODID++)
 						{
-							ModelLODHeader_t pLOD = new ModelLODHeader_t();
-							Int64 pLODOffset = pModelOffset + (12 * LODID) + pModel.lodOffset;
-							FileStream.ReadTypeFixed(ref pLOD, 12, pLODOffset);
+							ModelLODHeader_t LOD = new ModelLODHeader_t();
+							Int64 LODOffset = ModelOffset + (12 * LODID) + Model.lodOffset;
+							FileStream.ReadTypeFixed(ref LOD, 12, LODOffset);
 
-							//Temp remember verts count per lod model
-							Int32 TotalVerts = 0;
-							for (Int32 MeshID = 0; MeshID < MDLModel.Model.nummeshes; MeshID++)
+							StudioBodyPart.Models[ModelID].LODData[LODID] = LOD;
+
+                            #region Mesh LOD
+                            //Temp remember verts count per lod model
+                            Int32 VertexOffset = 0;
+							//List<mstudiovertex_t> VertexesPerLod = new List<mstudiovertex_t>();
+							for (Int32 MeshID = 0; MeshID < StudioModel.Model.nummeshes; MeshID++)
 							{
-								mstudiomesh_t MDLMesh = MDLPart.Models[modelID].Meshes[MeshID];
+								mstudiomesh_t StudioMesh = StudioBodyPart.Models[ModelID].Meshes[MeshID];
 
-								TotalVerts += MDLModel.Meshes[MeshID].VertexData.numlodvertices[LODID];
+								//TODO: StudioModel.Meshes[MeshID].VertexData.numlodvertices[LODID]; - we no longer need this??
+								VertexOffset += StudioMesh.numvertices;
+								List<Int32> IndicesPerMesh = new List<Int32>();
 
-								MeshHeader_t pMesh = new MeshHeader_t();
-								Int64 pMeshOffset = pLODOffset + (9 * MeshID) + pLOD.meshOffset;
-								FileStream.ReadTypeFixed(ref pMesh, 9, pMeshOffset);
+								MeshHeader_t Mesh = new MeshHeader_t();
+								Int64 MeshOffset = LODOffset + (9 * MeshID) + LOD.meshOffset;
+								FileStream.ReadTypeFixed(ref Mesh, 9, MeshOffset);
 
-								List<Int32> pIndices = new List<Int32>();
-								for (Int32 stripgroupID = 0; stripgroupID < pMesh.numStripGroups; stripgroupID++)
+								#region StripGroups
+								for (Int32 StripGroupID = 0; StripGroupID < Mesh.numStripGroups; StripGroupID++)
 								{
-									StripGroupHeader_t pStripGroup = new StripGroupHeader_t();
-									Int64 pStripGroupOffset = pMeshOffset + (25 * stripgroupID) + pMesh.stripGroupHeaderOffset;
-									FileStream.ReadTypeFixed(ref pStripGroup, 25, pStripGroupOffset);
+									StripGroupHeader_t StripGroup = new StripGroupHeader_t();
+									Int64 StripGroupOffset = MeshOffset + (25 * StripGroupID) + Mesh.stripGroupHeaderOffset;
+									FileStream.ReadTypeFixed(ref StripGroup, 25, StripGroupOffset);
 
-									Vertex_t[] Vertexes = new Vertex_t[pStripGroup.numVerts];
-									FileStream.BaseStream.Position = pStripGroupOffset + pStripGroup.vertOffset;
+									Vertex_t[] Vertexes = new Vertex_t[StripGroup.numVerts];
+									FileStream.BaseStream.Position = StripGroupOffset + StripGroup.vertOffset;
 									FileStream.ReadArrayFixed(ref Vertexes, 9);
 
-									FileStream.BaseStream.Position = pStripGroupOffset + pStripGroup.indexOffset;
-									Int16[] Indices = FileStream.ReadShortArray(pStripGroup.numIndices);
+									FileStream.BaseStream.Position = StripGroupOffset + StripGroup.indexOffset;
+									Int16[] Indices = FileStream.ReadShortArray(StripGroup.numIndices);
 
-									for (Int32 stripID = 0; stripID < pStripGroup.numStrips; stripID++)
+									#region Strips
+									for (Int32 StripID = 0; StripID < StripGroup.numStrips; StripID++)
 									{
 										StripHeader_t VTXStrip = new StripHeader_t();
-										Int64 VTXStripOffset = pStripGroupOffset + (27 * stripID) + pStripGroup.stripOffset;
+										Int64 VTXStripOffset = StripGroupOffset + (27 * StripID) + StripGroup.stripOffset;
 										FileStream.ReadTypeFixed(ref VTXStrip, 27, VTXStripOffset);
 
-										//TODO??
-										//Temp fix missed triangles on meshes
+										//TODO:
+										//Strip / "Split" vertexes
+										//Pseudo code:
+										/*for (Int32 VertID = 0; VertID < maxVertsPerLod; VertID++)
+										{
+											Int32 Index = MeshID * VTXStrip.numVerts + VertID;
+
+											if (Index < numStripVerts)
+											{
+												splitVerts.Add(verts[Index]);
+												splitIndices.Add(j);
+											}
+										}*/
+
+										//Hmmmmm... Well, it's looks what we want.... but still doesn't perfect (for lod's mesh)
+										/*Int32 NumVerts = VTXStrip.indexOffset + VTXStrip.numVerts;
+										for (Int32 VertID = VTXStrip.indexOffset; VertID < NumVerts; VertID++)
+										{
+											Int32 Index0 = VertID + StudioMesh.vertexoffset + VertexLODOffsets[LODID];
+											VertexesPerLod.Add(StudioVVD.tempVerts[Index0]);
+										}*/
+
 										if ((VTXStrip.flags & VTXStripGroupTriStripFlag) > 0)
 										{
-											for (Int32 j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices - 2; j++)
+											for (Int32 TempIdx = VTXStrip.indexOffset; TempIdx < VTXStrip.indexOffset + VTXStrip.numIndices - 2; TempIdx++)
 											{
-												Int32[] add = j % 2 == 1 ? new[] { j + 1, j, j + 2 } : new[] { j, j + 1, j + 2 };
-												foreach (var idx in add)
+												Int32[] add = TempIdx % 2 == 1 ?
+													new[] { TempIdx + 1, TempIdx, TempIdx + 2 } :
+													new[] { TempIdx, TempIdx + 1, TempIdx + 2 };
+
+												foreach (Int32 Index in add)
 												{
-													pIndices.Add(Vertexes[Indices[idx]].origMeshVertId + MDLMesh.vertexoffset);
+													IndicesPerMesh.Add(Vertexes[Indices[Index]].origMeshVertId + StudioMesh.vertexoffset);
 												}
 											}
 										}
 										else
 										{
-											for (Int32 j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices; j++)
+											for (Int32 Index = VTXStrip.indexOffset; Index < VTXStrip.indexOffset + VTXStrip.numIndices; Index++)
 											{
-												pIndices.Add(Vertexes[Indices[j]].origMeshVertId + MDLMesh.vertexoffset);
+												IndicesPerMesh.Add(Vertexes[Indices[Index]].origMeshVertId + StudioMesh.vertexoffset);
 											}
 										}
-
-										//TODO??
-										/*if ((VTXStrip.flags & VTXStripGroupTriListFlag) > 0)
-										{
-											for (var j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices; j++)
-											{
-												pIndices.Add(Vertexes[Indices[j]].origMeshVertId + MDLMesh.vertexoffset);
-											}
-										}
-										else if ((VTXStrip.flags & VTXStripGroupTriStripFlag) > 0)
-										{
-											for (var j = VTXStrip.indexOffset; j < VTXStrip.indexOffset + VTXStrip.numIndices - 2; j++)
-											{
-												var add = j % 2 == 1 ? new[] { j + 1, j, j + 2 } : new[] { j, j + 1, j + 2 };
-												foreach (var idx in add)
-												{
-													pIndices.Add(Vertexes[Indices[idx]].origMeshVertId + MDLMesh.vertexoffset);
-												}
-											}
-										}*/
 									}
-								}
+                                    #endregion
+                                }
+                                #endregion
 
-								StudioMDL.SetIndices(bodypartID, modelID, LODID, MeshID, pIndices);
-							}
+                                StudioMDL.SetIndices(BodypartID, ModelID, LODID, MeshID, IndicesPerMesh);
+                            }
+							#endregion
 
-							StudioMDL.SetVertices(bodypartID, modelID, LODID, TotalVerts, vertexoffset[LODID], StudioVVD.VVD_Vertexes[LODID]);
+							//StudioMDL.MDL_Bodyparts[BodypartID].Models[ModelID].VerticesPerLod[LODID] = VertexesPerLod.ToArray();
+							///TODO: Strip unused vertexes in <seealso cref="VVDFile.VVD_Vertexes"/> per lod
+							StudioMDL.SetVertices(BodypartID, ModelID, LODID, VertexOffset, VertexLODOffsets[LODID], StudioVVD.VVD_Vertexes[0]);
 
-							vertexoffset[LODID] += TotalVerts;
+							VertexLODOffsets[LODID] += VertexOffset;
 						}
-					}
-				}
-			}
-		}
+                        #endregion
+                    }
+                    #endregion
+                }
+                #endregion
+            }
+        }
 	}
 }

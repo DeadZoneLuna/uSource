@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using uSource.MathLib;
+using uSource.Formats.Source.VTF;
 
 namespace uSource.Formats.Source.MDL
 {
@@ -46,36 +47,42 @@ namespace uSource.Formats.Source.MDL
                     throw new FileLoadException("File signature does not match 'IDST'");
 
                 //Bones
+                #region Bones
+                //Bones
                 MDL_StudioBones = new mstudiobone_t[MDL_Header.bone_count];
                 MDL_BoneNames = new String[MDL_Header.bone_count];
-                for (Int32 boneID = 0; boneID < MDL_Header.bone_count; boneID++)
+                for (Int32 BoneID = 0; BoneID < MDL_Header.bone_count; BoneID++)
                 {
-                    Int32 boneOffset = MDL_Header.bone_offset + (216 * boneID);
-                    FileStream.ReadTypeFixed(ref MDL_StudioBones[boneID], 216, boneOffset);
-                    MDL_BoneNames[boneID] = FileStream.ReadNullTerminatedString(boneOffset + MDL_StudioBones[boneID].sznameindex);
+                    Int32 boneOffset = MDL_Header.bone_offset + (216 * BoneID);
+                    FileStream.ReadTypeFixed(ref MDL_StudioBones[BoneID], 216, boneOffset);
+                    MDL_BoneNames[BoneID] = FileStream.ReadNullTerminatedString(boneOffset + MDL_StudioBones[BoneID].sznameindex);
                 }
                 //Bones
+                #endregion
 
+                #region Hitboxes
                 if (parseHitboxes)
                 {
                     MDL_Hitboxsets = new mstudiohitboxset_t[MDL_Header.hitbox_count];
                     Hitboxes = new Hitbox[MDL_Header.hitbox_count][];
-                    for (Int32 hitboxsetID = 0; hitboxsetID < MDL_Header.hitbox_count; hitboxsetID++)
+                    for (Int32 HitboxsetID = 0; HitboxsetID < MDL_Header.hitbox_count; HitboxsetID++)
                     {
-                        Int32 hitboxsetOffset = MDL_Header.hitbox_offset + (12 * hitboxsetID);
-                        FileStream.ReadTypeFixed(ref MDL_Hitboxsets[hitboxsetID], 12, hitboxsetOffset);
-                        Hitboxes[hitboxsetID] = new Hitbox[MDL_Hitboxsets[hitboxsetID].numhitboxes];
+                        Int32 HitboxsetOffset = MDL_Header.hitbox_offset + (12 * HitboxsetID);
+                        FileStream.ReadTypeFixed(ref MDL_Hitboxsets[HitboxsetID], 12, HitboxsetOffset);
+                        Hitboxes[HitboxsetID] = new Hitbox[MDL_Hitboxsets[HitboxsetID].numhitboxes];
 
-                        for (Int32 hitboxID = 0; hitboxID < MDL_Hitboxsets[hitboxsetID].numhitboxes; hitboxID++)
+                        for (Int32 HitboxID = 0; HitboxID < MDL_Hitboxsets[HitboxsetID].numhitboxes; HitboxID++)
                         {
-                            Int32 hitboxOffset = hitboxsetOffset + (68 * hitboxID) + MDL_Hitboxsets[hitboxsetID].hitboxindex;
-                            Hitboxes[hitboxsetID][hitboxID].BBox = new mstudiobbox_t();
+                            Int32 HitboxOffset = HitboxsetOffset + (68 * HitboxID) + MDL_Hitboxsets[HitboxsetID].hitboxindex;
+                            Hitboxes[HitboxsetID][HitboxID].BBox = new mstudiobbox_t();
 
-                            FileStream.ReadTypeFixed(ref Hitboxes[hitboxsetID][hitboxID].BBox, 68, hitboxOffset);
+                            FileStream.ReadTypeFixed(ref Hitboxes[HitboxsetID][HitboxID].BBox, 68, HitboxOffset);
                         }
                     }
                 }
+                #endregion
 
+                #region Animations
                 if (parseAnims)
                 {
                     try
@@ -241,76 +248,74 @@ namespace uSource.Formats.Source.MDL
                         Debug.LogError(String.Format("\"{0}\" Parse animation failed: {1}", MDL_Header.Name, ex));
                     }
                 }
+                #endregion
 
+                #region Materials
                 //Materials
                 MDL_TexturesInfo = new mstudiotexture_t[MDL_Header.texture_count];
                 MDL_Textures = new String[MDL_Header.texture_count];
-                for (Int32 texID = 0; texID < MDL_Header.texture_count; texID++)
+                for (Int32 TexID = 0; TexID < MDL_Header.texture_count; TexID++)
                 {
-                    Int32 textureOffset = MDL_Header.texture_offset + (64 * texID);
-                    FileStream.ReadTypeFixed(ref MDL_TexturesInfo[texID], 64, textureOffset);
-                    MDL_Textures[texID] = FileStream.ReadNullTerminatedString(textureOffset + MDL_TexturesInfo[texID].sznameindex);
+                    Int32 TextureOffset = MDL_Header.texture_offset + (64 * TexID);
+                    FileStream.ReadTypeFixed(ref MDL_TexturesInfo[TexID], 64, TextureOffset);
+                    MDL_Textures[TexID] = FileStream.ReadNullTerminatedString(TextureOffset + MDL_TexturesInfo[TexID].sznameindex);
                 }
 
                 Int32[] TDirOffsets = new Int32[MDL_Header.texturedir_count];
                 MDL_TDirectories = new String[MDL_Header.texturedir_count];
-                for (Int32 dirID = 0; dirID < MDL_Header.texturedir_count; dirID++)
+                for (Int32 DirID = 0; DirID < MDL_Header.texturedir_count; DirID++)
                 {
-                    FileStream.ReadTypeFixed(ref TDirOffsets[dirID], 4, MDL_Header.texturedir_offset + (4 * dirID));
-                    MDL_TDirectories[dirID] = FileStream.ReadNullTerminatedString(TDirOffsets[dirID]);//.Replace("\\", "/");
+                    FileStream.ReadTypeFixed(ref TDirOffsets[DirID], 4, MDL_Header.texturedir_offset + (4 * DirID));
+                    MDL_TDirectories[DirID] = FileStream.ReadNullTerminatedString(TDirOffsets[DirID]);
                 }
                 //Materials
+                #endregion
 
+                #region BodyParts
                 //Bodyparts
                 MDL_Bodyparts = new StudioBodyPart[MDL_Header.bodypart_count];
-                for (Int32 bodypartID = 0; bodypartID < MDL_Header.bodypart_count; bodypartID++)
+                for (Int32 BodypartID = 0; BodypartID < MDL_Header.bodypart_count; BodypartID++)
                 {
-                    mstudiobodyparts_t pBodypart = new mstudiobodyparts_t();
-                    Int32 pBodypartOffset = MDL_Header.bodypart_offset + (16 * bodypartID);
-                    FileStream.ReadTypeFixed(ref pBodypart, 16, pBodypartOffset);
+                    mstudiobodyparts_t BodyPart = new mstudiobodyparts_t();
+                    Int32 BodyPartOffset = MDL_Header.bodypart_offset + (16 * BodypartID);
+                    FileStream.ReadTypeFixed(ref BodyPart, 16, BodyPartOffset);
 
-                    if (pBodypart.sznameindex != 0)
-                        MDL_Bodyparts[bodypartID].Name = FileStream.ReadNullTerminatedString(pBodypartOffset + pBodypart.sznameindex);
+                    if (BodyPart.sznameindex != 0)
+                        MDL_Bodyparts[BodypartID].Name = FileStream.ReadNullTerminatedString(BodyPartOffset + BodyPart.sznameindex);
                     else
-                        MDL_Bodyparts[bodypartID].Name = String.Empty;
+                        MDL_Bodyparts[BodypartID].Name = String.Empty;
 
-                    MDL_Bodyparts[bodypartID].Models = new StudioModel[pBodypart.nummodels];
+                    MDL_Bodyparts[BodypartID].Models = new StudioModel[BodyPart.nummodels];
 
-                    for (Int32 modelID = 0; modelID < pBodypart.nummodels; modelID++)
+                    for (Int32 ModelID = 0; ModelID < BodyPart.nummodels; ModelID++)
                     {
-                        mstudiomodel_t pModel = new mstudiomodel_t();
-                        Int64 pModelOffset = pBodypartOffset + (148 * modelID) + pBodypart.modelindex;
-                        FileStream.ReadTypeFixed(ref pModel, 148, pModelOffset);
+                        mstudiomodel_t Model = new mstudiomodel_t();
+                        Int64 ModelOffset = BodyPartOffset + (148 * ModelID) + BodyPart.modelindex;
+                        FileStream.ReadTypeFixed(ref Model, 148, ModelOffset);
 
-                        MDL_Bodyparts[bodypartID].Models[modelID].isBlank = (pModel.numvertices <= 0 || pModel.nummeshes <= 0);
-                        MDL_Bodyparts[bodypartID].Models[modelID].Model = pModel;
+                        MDL_Bodyparts[BodypartID].Models[ModelID].isBlank = (Model.numvertices <= 0 || Model.nummeshes <= 0);
+                        MDL_Bodyparts[BodypartID].Models[ModelID].Model = Model;
 
-                        //TODO: 
-                        //props/de_aztec/hr_aztec/aztec_stairs/aztec_stair_02_edge_64wide_footer_03.mdl 
-                        //props/de_aztec/hr_aztec/aztec_walls/aztec_wall_stone01_bridge_foundation_02.mdl - no vertexes, why? D:
-                        MDL_Bodyparts[bodypartID].Models[modelID].Meshes = new mstudiomesh_t[pModel.nummeshes];
-                        for (Int32 meshID = 0; meshID < pModel.nummeshes; meshID++)
+                        MDL_Bodyparts[BodypartID].Models[ModelID].Meshes = new mstudiomesh_t[Model.nummeshes];
+                        for (Int32 MeshID = 0; MeshID < Model.nummeshes; MeshID++)
                         {
-                            mstudiomesh_t pMesh = new mstudiomesh_t();
-                            Int64 pMeshOffset = pModelOffset + (116 * meshID) + pModel.meshindex;
-                            FileStream.ReadTypeFixed(ref pMesh, 116, pMeshOffset);
+                            mstudiomesh_t Mesh = new mstudiomesh_t();
+                            Int64 MeshOffset = ModelOffset + (116 * MeshID) + Model.meshindex;
+                            FileStream.ReadTypeFixed(ref Mesh, 116, MeshOffset);
 
-                            //TODO: Temp fix, if "no vertexes" on model (but model has vertexes... it's didn't better way to fix.. but works now)
-                            if (pMesh.VertexData.numlodvertices[0] == 0)
-                                pMesh.VertexData.numlodvertices[0] = pMesh.numvertices;
-
-                            MDL_Bodyparts[bodypartID].Models[modelID].Meshes[meshID] = pMesh;
+                            MDL_Bodyparts[BodypartID].Models[ModelID].Meshes[MeshID] = Mesh;
                         }
 
-                        MDL_Bodyparts[bodypartID].Models[modelID].IndicesPerLod = new Dictionary<Int32, List<Int32>>[8];
+                        MDL_Bodyparts[BodypartID].Models[ModelID].IndicesPerLod = new Dictionary<Int32, List<Int32>>[8];
 
                         for (Int32 i = 0; i < 8; i++)
-                            MDL_Bodyparts[bodypartID].Models[modelID].IndicesPerLod[i] = new Dictionary<Int32, List<Int32>>();
+                            MDL_Bodyparts[BodypartID].Models[ModelID].IndicesPerLod[i] = new Dictionary<Int32, List<Int32>>();
 
-                        MDL_Bodyparts[bodypartID].Models[modelID].VerticesPerLod = new mstudiovertex_t[8][];
+                        MDL_Bodyparts[BodypartID].Models[ModelID].VerticesPerLod = new mstudiovertex_t[8][];
                     }
                 }
                 //BodyParts
+                #endregion
             }
         }
 
@@ -325,11 +330,12 @@ namespace uSource.Formats.Source.MDL
             Array.Copy(Vertexes, StartIndex, MDL_Bodyparts[BodypartID].Models[ModelID].VerticesPerLod[LODID], 0, TotalVerts);
         }
 
-        public Boolean meshExist = true;
+        public Boolean BuildMesh = true;
         public Transform BuildModel(Boolean GenerateUV2 = false)
         {
             GameObject ModelObject = new GameObject(MDL_Header.Name);
 
+            #region Bones
             Transform[] Bones = new Transform[MDL_Header.bone_count];
             Dictionary<Int32, String> bonePathDict = new Dictionary<Int32, String>();
             for (Int32 boneID = 0; boneID < MDL_Header.bone_count; boneID++)
@@ -378,86 +384,193 @@ namespace uSource.Formats.Source.MDL
                 MDLArmatureInfo DebugArmature = ModelObject.AddComponent<MDLArmatureInfo>();
                 DebugArmature.boneNodes = Bones;
             }
+            #endregion
 
+            #region Hitboxes
             if (MDL_Hitboxsets != null)
             {
-                for (Int32 hitboxsetID = 0; hitboxsetID < MDL_Header.hitbox_count; hitboxsetID++)
+                for (Int32 HitboxsetID = 0; HitboxsetID < MDL_Header.hitbox_count; HitboxsetID++)
                 {
-                    for (Int32 hitboxID = 0; hitboxID < MDL_Hitboxsets[hitboxsetID].numhitboxes; hitboxID++)
+                    for (Int32 HitboxID = 0; HitboxID < MDL_Hitboxsets[HitboxsetID].numhitboxes; HitboxID++)
                     {
-                        mstudiobbox_t hitbox = Hitboxes[hitboxsetID][hitboxID].BBox;
-                        BoxCollider bbox = new GameObject(String.Format("Hitbox_{0}", Bones[hitbox.bone].name)).AddComponent<BoxCollider>();
+                        mstudiobbox_t Hitbox = Hitboxes[HitboxsetID][HitboxID].BBox;
+                        BoxCollider BBox = new GameObject(String.Format("Hitbox_{0}", Bones[Hitbox.bone].name)).AddComponent<BoxCollider>();
 
-                        bbox.size = MathLibrary.NegateX(hitbox.bbmax - hitbox.bbmin) * uLoader.UnitScale;
-                        bbox.center = (MathLibrary.NegateX(hitbox.bbmax + hitbox.bbmin) / 2) * uLoader.UnitScale;
+                        BBox.size = MathLibrary.NegateX(Hitbox.bbmax - Hitbox.bbmin) * uLoader.UnitScale;
+                        BBox.center = (MathLibrary.NegateX(Hitbox.bbmax + Hitbox.bbmin) / 2) * uLoader.UnitScale;
 
-                        bbox.transform.parent = Bones[hitbox.bone];
-                        bbox.transform.localPosition = Vector3.zero;
-                        bbox.transform.localRotation = Quaternion.identity;
+                        BBox.transform.parent = Bones[Hitbox.bone];
+                        BBox.transform.localPosition = Vector3.zero;
+                        BBox.transform.localRotation = Quaternion.identity;
 
                         //bbox.transform.tag = HitTagType(MDL_BBoxes[i].group);
                     }
                 }
             }
+            #endregion
 
-            if (meshExist)
+            #region BodyParts
+            if (BuildMesh)
             {
-                for (Int32 bodypartID = 0; bodypartID < MDL_Header.bodypart_count; bodypartID++)
+                for (Int32 BodypartID = 0; BodypartID < MDL_Header.bodypart_count; BodypartID++)
                 {
-                    StudioBodyPart BodyPart = MDL_Bodyparts[bodypartID];
+                    StudioBodyPart BodyPart = MDL_Bodyparts[BodypartID];
 
-                    for (Int32 modelID = 0; modelID < BodyPart.Models.Length; modelID++)
+                    for (Int32 ModelID = 0; ModelID < BodyPart.Models.Length; ModelID++)
                     {
-                        StudioModel Model = BodyPart.Models[modelID];
+                        StudioModel Model = BodyPart.Models[ModelID];
 
                         //Skip if model is blank
                         if (Model.isBlank)
                             continue;
 
-                        for (Int32 lodID = 0; lodID < Model.NumLODs; lodID++)
-                        {
-                            mstudiovertex_t[] Vertexes = Model.VerticesPerLod[lodID];
+                        #region TODO: Remove this code after find way to strip unused vertexes for lod's (VTXStripGroup / VTXStrip)
+                        mstudiovertex_t[] Vertexes = Model.VerticesPerLod[0];
 
-                            BoneWeight[] pBoneWeight = new BoneWeight[Vertexes.Length];
-                            Vector3[] pVertices = new Vector3[Vertexes.Length];
-                            Vector3[] pNormals = new Vector3[Vertexes.Length];
-                            Vector2[] pUvBuffer = new Vector2[Vertexes.Length];
+                        BoneWeight[] BoneWeight = new BoneWeight[Vertexes.Length];
+                        Vector3[] Vertices = new Vector3[Vertexes.Length];
+                        Vector3[] Normals = new Vector3[Vertexes.Length];
+                        Vector2[] UvBuffer = new Vector2[Vertexes.Length];
+
+                        for (Int32 i = 0; i < Vertexes.Length; i++)
+                        {
+                            Vertices[i] = MathLibrary.SwapZY(Vertexes[i].m_vecPosition * uLoader.UnitScale);
+                            Normals[i] = MathLibrary.SwapZY(Vertexes[i].m_vecNormal);
+
+                            Vector2 UV = Vertexes[i].m_vecTexCoord;
+                            if (uLoader.SaveAssetsToUnity && uLoader.ExportTextureAsPNG)
+                                UV.y = -UV.y;
+
+                            UvBuffer[i] = UV;
+                            BoneWeight[i] = GetBoneWeight(Vertexes[i].m_BoneWeights);
+                        }
+                        #endregion
+
+                        #region LOD Support
+                        Boolean DetailModeEnabled = 
+                            uLoader.DetailMode == DetailMode.Lowest || 
+                            uLoader.DetailMode == DetailMode.Low || 
+                            uLoader.DetailMode == DetailMode.Medium || 
+                            uLoader.DetailMode == DetailMode.High;
+
+                        Boolean LODExist = uLoader.EnableLODParsing && !DetailModeEnabled && Model.NumLODs > 1;
+                        Transform FirstLODObject = null;
+                        LODGroup LODGroup = null;
+                        LOD[] LODs = null;
+                        Single MaxSwitchPoint = 100;
+                        Int32 StartLODIndex = 0;
+
+                        if (LODExist)
+                        {
+                            LODs = new LOD[Model.NumLODs];
+
+                            for (Int32 LODID = 1; LODID < 3; LODID++)
+                            {
+                                Int32 LastID = Model.NumLODs - LODID;
+                                ModelLODHeader_t LOD = Model.LODData[LastID];
+
+                                //ignore $shadowlod
+                                if (LOD.switchPoint != -1)
+                                {
+                                    if (LOD.switchPoint > 0)
+                                        MaxSwitchPoint = LOD.switchPoint;
+
+                                    //Set switchPoint from MaxSwitchPoint (if switchPoint is zero or negative)
+                                    if (LODID == 2 || LOD.switchPoint == 0)
+                                    {
+                                        MaxSwitchPoint += MaxSwitchPoint * uLoader.NegativeAddLODPrecent;
+                                        Model.LODData[LOD.switchPoint == 0 ? LastID : LastID + 1].switchPoint = MaxSwitchPoint;
+                                    }
+
+                                    // + Threshold used to avoid errors with LODGroup
+                                    MaxSwitchPoint += uLoader.ThresholdMaxSwitch;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (!uLoader.EnableLODParsing)
+                                Model.NumLODs = 1;
+                        }
+
+                        if (uLoader.EnableLODParsing && DetailModeEnabled)
+                        {
+                            StartLODIndex = 
+                                uLoader.DetailMode == DetailMode.Lowest ? (Model.NumLODs - 1) : 
+                                uLoader.DetailMode == DetailMode.Low ? (Int32)(Model.NumLODs / 1.5f) : 
+                                uLoader.DetailMode == DetailMode.Medium ? (Model.NumLODs / 2) : (Int32)(Model.NumLODs / 2.5f);
+                        }
+                        #endregion
+
+                        #region Build Meshes
+                        for (Int32 LODID = StartLODIndex; LODID < Model.NumLODs; LODID++)
+                        {
+                            #region TODO: Uncomment after find way to strip unused vertexes for lod's (VTXStripGroup / VTXStrip)
+                            /*mstudiovertex_t[] Vertexes = Model.VerticesPerLod[LODID];
+
+                            BoneWeight[] BoneWeight = new BoneWeight[Vertexes.Length];
+                            Vector3[] Vertices = new Vector3[Vertexes.Length];
+                            Vector3[] Normals = new Vector3[Vertexes.Length];
+                            Vector2[] UvBuffer = new Vector2[Vertexes.Length];
 
                             for (Int32 i = 0; i < Vertexes.Length; i++)
                             {
-                                pVertices[i] = MathLibrary.SwapZY(Vertexes[i].m_vecPosition * uLoader.UnitScale);
-                                pNormals[i] = MathLibrary.SwapZY(Vertexes[i].m_vecNormal);
+                                Vertices[i] = MathLibrary.SwapZY(Vertexes[i].m_vecPosition * uLoader.UnitScale);
+                                Normals[i] = MathLibrary.SwapZY(Vertexes[i].m_vecNormal);
 
                                 Vector2 UV = Vertexes[i].m_vecTexCoord;
                                 if (uLoader.SaveAssetsToUnity && uLoader.ExportTextureAsPNG)
                                     UV.y = -UV.y;
 
-                                pUvBuffer[i] = UV;
-                                pBoneWeight[i] = GetBoneWeight(Vertexes[i].m_BoneWeights);
-                            }
+                                UvBuffer[i] = UV;
+                                BoneWeight[i] = GetBoneWeight(Vertexes[i].m_BoneWeights);
+                            }*/
+                            #endregion
 
+                            #region LOD
+                            ModelLODHeader_t LOD = Model.LODData[LODID];
+
+                            if (LODExist)
+                            {
+                                if (LOD.switchPoint == 0)
+                                    LOD.switchPoint = MaxSwitchPoint;
+                                else
+                                    LOD.switchPoint = MaxSwitchPoint - LOD.switchPoint;
+
+                                LOD.switchPoint -= LOD.switchPoint * uLoader.SubstractLODPrecent;
+                            }
+                            #endregion
+
+                            #region Mesh
+                            //Create empty object for mesh
                             GameObject MeshObject = new GameObject(Model.Model.Name);
-                            MeshObject.name += "_vLOD" + lodID;
+                            MeshObject.name += "_vLOD" + LODID;
                             MeshObject.transform.parent = ModelObject.transform;
 
-                            Mesh pMesh = new Mesh();
-                            pMesh.name = MeshObject.name;
-                            pMesh.subMeshCount = Model.Model.nummeshes;
+                            //Create empty mesh and fill parsed data
+                            Mesh Mesh = new Mesh();
+                            Mesh.name = MeshObject.name;
 
-                            pMesh.vertices = pVertices;
-
-                            if (pMesh.vertexCount <= 0)
+                            Mesh.subMeshCount = Model.Model.nummeshes;
+                            Mesh.vertices = Vertices;
+                            //Make sure if mesh exist any vertexes
+                            if (Mesh.vertexCount <= 0)
                             {
-                                Debug.LogWarning(String.Format("Mesh: \"{0}\" has no vertexes, skip building... (MDL Version: {1})", pMesh.name, MDL_Header.version));
+                                Debug.LogWarning(String.Format("Mesh: \"{0}\" has no vertexes, skip building... (MDL Version: {1})", Mesh.name, MDL_Header.version));
                                 continue;
                             }
 
-                            pMesh.normals = pNormals;
-                            pMesh.uv = pUvBuffer;
+                            Mesh.normals = Normals;
+                            Mesh.uv = UvBuffer;
+                            #endregion
 
+                            #region Renderers
                             Renderer Renderer;
+                            //SkinnedMeshRenderer (Models with "animated" bones & skin data)
                             if (!MDL_Header.flags.HasFlag(StudioHDRFlags.STUDIOHDR_FLAGS_STATIC_PROP))
                             {
+                                //Bind poses & bone weights
                                 SkinnedMeshRenderer SkinnedRenderer = MeshObject.AddComponent<SkinnedMeshRenderer>();
                                 Renderer = SkinnedRenderer;
                                 Matrix4x4[] BindPoses = new Matrix4x4[Bones.Length];
@@ -465,56 +578,74 @@ namespace uSource.Formats.Source.MDL
                                 for (Int32 i = 0; i < BindPoses.Length; i++)
                                     BindPoses[i] = Bones[i].worldToLocalMatrix * MeshObject.transform.localToWorldMatrix;
 
-                                pMesh.boneWeights = pBoneWeight;
-                                pMesh.bindposes = BindPoses;
+                                Mesh.boneWeights = BoneWeight;
+                                Mesh.bindposes = BindPoses;
 
-                                SkinnedRenderer.sharedMesh = pMesh;
+                                SkinnedRenderer.sharedMesh = Mesh;
 
                                 SkinnedRenderer.bones = Bones;
                                 SkinnedRenderer.updateWhenOffscreen = true;
                             }
+                            //MeshRenderer (models with "STUDIOHDR_FLAGS_STATIC_PROP" flag or with generic "static_prop" bone)
                             else
                             {
                                 MeshFilter MeshFilter = MeshObject.AddComponent<MeshFilter>();
                                 Renderer = MeshObject.AddComponent<MeshRenderer>();
-                                MeshFilter.sharedMesh = pMesh;
+                                MeshFilter.sharedMesh = Mesh;
                             }
 
+                            Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+                            #endregion
+
+                            #region Debug Stuff
                             #if UNITY_EDITOR
-                            VTF.DebugMaterial DebugMat = null;
+                            DebugMaterial DebugMat = null;
                             if (uLoader.DebugMaterials)
-                                DebugMat = MeshObject.AddComponent<VTF.DebugMaterial>();
+                                DebugMat = MeshObject.AddComponent<DebugMaterial>();
                             #endif
+                            #endregion
 
-                            Material[] pMaterials = new Material[pMesh.subMeshCount];
+                            #region Triangles and Materials
+                            Material[] Materials = new Material[Mesh.subMeshCount];
 
-                            for (Int32 meshID = 0; meshID < Model.Model.nummeshes; meshID++)
+                            for (Int32 MeshID = 0; MeshID < Model.Model.nummeshes; MeshID++)
                             {
-                                pMesh.SetTriangles(Model.IndicesPerLod[lodID][meshID], meshID);
+                                //Set triangles per lod & submeshes
+                                Mesh.SetTriangles(Model.IndicesPerLod[LODID][MeshID], MeshID);
 
+                                //Find & parse materials
                                 String MaterialPath;
+                                Int32 LastDirID = MDL_TDirectories.Length - 1;
                                 for (Int32 DirID = 0; DirID < MDL_TDirectories.Length; DirID++)
                                 {
-                                    MaterialPath = MDL_TDirectories[DirID] + MDL_Textures[Model.Meshes[meshID].material];
+                                    MaterialPath = MDL_TDirectories[DirID] + MDL_Textures[Model.Meshes[MeshID].material];
 
+                                    //If material exist
                                     if (uResourceManager.ContainsFile(MaterialPath, uResourceManager.MaterialsSubFolder, uResourceManager.MaterialsExtension[0]))
                                     {
-                                        VTF.VMTFile VMT = uResourceManager.LoadMaterial(MaterialPath);
+                                        VMTFile VMT = uResourceManager.LoadMaterial(MaterialPath);
 
+                                        #region Debug Stuff
                                         #if UNITY_EDITOR
                                         if (uLoader.DebugMaterials)
                                             DebugMat.Init(VMT);
                                         #endif
+                                        #endregion
 
-                                        pMaterials[meshID] = VMT.Material;
+                                        //Set material
+                                        Materials[MeshID] = VMT.Material;
                                         break;
                                     }
-                                    //else if (j == MDL_TDirectories.Length - 1)
-                                    //    pMaterials[matID] = ResourceManager.LoadMaterial(String.Empty).Material;
+                                    else if (DirID == LastDirID)
+                                        Materials[MeshID] = uResourceManager.LoadMaterial(String.Empty).Material;
                                 }
                             }
 
-#if UNITY_EDITOR
+                            Renderer.sharedMaterials = Materials;
+                            #endregion
+
+                            #region UV2
+                            #if UNITY_EDITOR
                             if (GenerateUV2)
                             {
                                 UnityEditor.SerializedObject so = new UnityEditor.SerializedObject(Renderer);
@@ -522,17 +653,40 @@ namespace uSource.Formats.Source.MDL
                                 so.ApplyModifiedProperties();
 
                                 MeshObject.isStatic = GenerateUV2;
-                                uResourceManager.UV2GenerateCache.Add(pMesh);
+                                uResourceManager.UV2GenerateCache.Add(Mesh);
+                            }
+                            #endif
+                            #endregion
+
+                            #region Set LOD's
+                            if (LODExist)
+                            {
+                                if (LODID == 0)
+                                {
+                                    LODGroup = MeshObject.AddComponent<LODGroup>();
+                                    FirstLODObject = MeshObject.transform;
+                                }
+                                else if (FirstLODObject != null)
+                                    MeshObject.transform.parent = FirstLODObject;
+
+                                LODs[LODID] = new LOD(LOD.switchPoint / MaxSwitchPoint, new Renderer[] { Renderer });
                             }
 
-#endif
-                            Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
-                            Renderer.sharedMaterials = pMaterials;
+                            if (uLoader.EnableLODParsing && DetailModeEnabled)
+                                break;
+                            #endregion
                         }//lod's per model
+
+                        //Init all parsed lod's into LODGroup
+                        if (LODGroup != null)
+                            LODGroup.SetLODs(LODs);
+                        #endregion
                     }//models in bodypart
                 }//Bodypart
             }
+            #endregion
 
+            #region Animations
             if (MDL_SeqDescriptions != null)
             {
                 var AnimationComponent = ModelObject.AddComponent<Animation>();
@@ -641,6 +795,7 @@ namespace uSource.Formats.Source.MDL
                     AnimationComponent.AddClip(clip, clip.name);
                 }
             }
+            #endregion
 
             //If model has compiled flag "$staticprop"
             //then rotate this model by 90 degrees (Y)
@@ -654,6 +809,7 @@ namespace uSource.Formats.Source.MDL
             return ModelObject.transform;
         }
 
+        #region Misc Stuff
         static String HitTagType(Int32 typeHit)
         {
             String returnType;
@@ -712,5 +868,15 @@ namespace uSource.Formats.Source.MDL
 
             return boneWeight;
         }
+        #endregion
+    }
+
+    public enum DetailMode
+    {
+        None, // Parse all lod's
+        Lowest, // Parse only last lod's
+        Low, // Parse only low lod's
+        Medium, // Parse only mid lod's
+        High // Parse only high lod's
     }
 }
