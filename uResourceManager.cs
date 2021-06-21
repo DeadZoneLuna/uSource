@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace uSource
 {
-    #region Resource Provider
+    #region Resource Providers
     public interface IResourceProvider
     {
         Boolean ContainsFile(String FilePath);
@@ -189,12 +189,15 @@ namespace uSource
         };
         #endregion
 
+        #region Cache
         //Cache
         public static Dictionary<String, String> DirectoryCache;
         public static Dictionary<String, Transform> ModelCache;
         public static Dictionary<String, VMTFile> MaterialCache;
         public static Dictionary<String, Texture2D[,]> TextureCache;
+        #endregion
 
+        #region Editor Stuff
 #if UNITY_EDITOR
         public static Boolean RefreshAssets;
         public static String ProjectPath;
@@ -203,9 +206,9 @@ namespace uSource
         public static List<String[,]> TexExportCache;
         public static List<Mesh> UV2GenerateCache;
 #endif
+        #endregion
 
-        public static readonly List<IResourceProvider> Providers = new List<IResourceProvider>();
-
+        #region Misc Stuff
         public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
         public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
         {
@@ -225,8 +228,11 @@ namespace uSource
             else
                 return FileName;
         }
+        #endregion
 
         #region Provider Manager
+        public static readonly List<IResourceProvider> Providers = new List<IResourceProvider>();
+
         public static void Init(Int32 StartIndex = 0, IResourceProvider mainProvider = null)
         {
             if (ModelCache == null)
@@ -345,6 +351,7 @@ namespace uSource
         }
         #endregion
 
+        #region Resource Manager
         public static void LoadMap(String MapName)
         {
             Init(uLoader.RootPath, uLoader.ModFolders[0], uLoader.DirPaks[0]);
@@ -416,6 +423,7 @@ namespace uSource
             String FileName = TempPath + ModelsExtension[0];
             try
             {
+                #region Studio Model
                 //Try load model
                 MDLFile MDLFile;
                 using (Stream mdlStream = OpenFile(FileName))
@@ -425,8 +433,10 @@ namespace uSource
 
                     MDLFile = new MDLFile(mdlStream, WithAnims, withHitboxes);
                 }
+                #endregion
 
                 //Try load vertexes
+                #region Vertexes (Vertices data)
                 FileName = TempPath + ModelsExtension[1];
                 VVDFile VVDFile;
                 using (Stream vvdStream = OpenFile(FileName))
@@ -436,13 +446,15 @@ namespace uSource
                     else
                     {
                         Debug.LogWarning(FileName + " NOT FOUND!");
-                        MDLFile.meshExist = false;
+                        MDLFile.BuildMesh = false;
                         VVDFile = null;
                     }
                 }
+                #endregion
 
+                #region Meshes
                 VTXFile VTXFile = null;
-                if (MDLFile.meshExist)
+                if (MDLFile.BuildMesh)
                 {
                     if (VVDFile != null)
                     {
@@ -454,7 +466,7 @@ namespace uSource
                             {
                                 if (vtxStream != null)
                                 {
-                                    MDLFile.meshExist = true;
+                                    MDLFile.BuildMesh = true;
                                     VTXFile = new VTXFile(vtxStream, MDLFile, VVDFile);
                                     break;
                                 }
@@ -465,10 +477,11 @@ namespace uSource
                         if (VTXFile == null)
                         {
                             Debug.LogWarning(FileName + " NOT FOUND!");
-                            MDLFile.meshExist = false;
+                            MDLFile.BuildMesh = false;
                         }
                     }
                 }
+                #endregion
 
                 //Try build model
                 Model = MDLFile.BuildModel(GenerateUV2);
@@ -627,8 +640,9 @@ namespace uSource
 
             return VTFFile.Frames;
         }
+        #endregion
 
-        #region Export resources
+        #region Export Manager
         public static void ExportFromCache()
         {
 #if UNITY_EDITOR
