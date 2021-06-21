@@ -75,6 +75,14 @@ namespace uSource
             return new Vector3(x, y, z);
         }
 
+        public static Vector2 ToVector2(this String param)
+        {
+            Vector3 Result = ToVector3(param);
+            Result.y = Result.y == 0f ? Result.x : Result.y;
+
+            return Result;
+        }
+
         public static Color32 ToColor32(this String param)
         {
             if (param == null) return new Color32(0x00, 0x00, 0x00, 255);

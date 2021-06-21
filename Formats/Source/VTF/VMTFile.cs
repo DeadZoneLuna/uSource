@@ -200,10 +200,11 @@ namespace uSource.Formats.Source.VTF
                     TextureName = GetParma("$detail");
                     Material.SetTexture(PropertyName, uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, PropertyName } })[0, 0]);
 
+                    //TODO: Fix vector2 parse
                     if (ContainsParma("$detailscale"))
                     {
-                        float detailScale = GetSingle("$detailscale");
-                        Material.SetTextureScale("_Detail", new Vector2(detailScale, detailScale));
+                        Vector2 DetailScale = GetParma("$detailscale").ToVector2();
+                        Material.SetTextureScale("_Detail", DetailScale);
                     }
 
                     if (Material.HasProperty("_DetailFactor"))
