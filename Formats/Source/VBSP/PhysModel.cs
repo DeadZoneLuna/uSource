@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -7,16 +8,16 @@ namespace uSource.Formats.Source.VBSP
 {
 	public class PhysModel
 	{
-		public PhysModel(int modelIndex, int solidCount, byte[] collisionData, byte[] keyData)
+		public PhysModel(Int32 modelIndex, Int32 solidCount, Byte[] collisionData, Byte[] keyData)
 		{
 			ModelIndex = modelIndex;
 			KeyData = System.Text.Encoding.ASCII.GetString(keyData);
 
 			using (var ms = new MemoryStream(collisionData))
 			{
-				using (var br = new BinaryReader(ms))
+				using (var br = new uReader(ms))
 				{
-					for (int i = 0; i < solidCount; i++)
+					for (Int32 i = 0; i < solidCount; i++)
 					{
 						var solid = new PhysModelSolid();
 						Solids.Add(solid);
@@ -43,7 +44,7 @@ namespace uSource.Formats.Source.VBSP
 							solid.Convexes.Add(cc);
 
 							var pos = br.BaseStream.Position;
-							var vertexOffset = (int)(pos + br.ReadUInt32());
+							var vertexOffset = (Int32)(pos + br.ReadUInt32());
 
 							cc.BrushIndex = br.ReadInt32();
 							cc.idk2 = br.ReadByte();
@@ -53,7 +54,7 @@ namespace uSource.Formats.Source.VBSP
 							var triCount = br.ReadInt16();
 							cc.idk5 = br.ReadUInt16();
 
-							for (int j = 0; j < triCount; j++)
+							for (Int32 j = 0; j < triCount; j++)
 							{
 								br.BaseStream.Seek(4, SeekOrigin.Current);
 
@@ -66,9 +67,9 @@ namespace uSource.Formats.Source.VBSP
 
 								try
 								{
-									var v1 = collisionData.ReadAtPosition<Vector3>(vertexOffset + index1 * 16);
-									var v2 = collisionData.ReadAtPosition<Vector3>(vertexOffset + index2 * 16);
-									var v3 = collisionData.ReadAtPosition<Vector3>(vertexOffset + index3 * 16);
+									Vector3 v1 = collisionData.ReadAtPosition<Vector3>(vertexOffset + index1 * 16);
+									Vector3 v2 = collisionData.ReadAtPosition<Vector3>(vertexOffset + index2 * 16);
+									Vector3 v3 = collisionData.ReadAtPosition<Vector3>(vertexOffset + index3 * 16);
 
 									cc.Triangles.Add(cc.Verts.Count);
 									cc.Triangles.Add(cc.Verts.Count + 1);
@@ -90,7 +91,7 @@ namespace uSource.Formats.Source.VBSP
 							}
 						}
 
-						var remainder = maxPos - br.BaseStream.Position;
+						Int64 remainder = maxPos - br.BaseStream.Position;
 						if (remainder > 0)
 						{
 							br.BaseStream.Seek(remainder, SeekOrigin.Current);
@@ -102,8 +103,8 @@ namespace uSource.Formats.Source.VBSP
 			KeyValues = KeyValues.Parse(KeyData);
 		}
 
-		public readonly int ModelIndex;
-		public string KeyData;
+		public readonly Int32 ModelIndex;
+		public String KeyData;
 		public List<PhysModelSolid> Solids = new List<PhysModelSolid>();
 		public KeyValues KeyValues;
 
@@ -111,16 +112,16 @@ namespace uSource.Formats.Source.VBSP
 
 	public class PhysModelConvex
 	{
-		public List<int> Triangles = new List<int>();
-		public List<UnityEngine.Vector3> Verts = new List<UnityEngine.Vector3>();
-		public int BrushIndex;
-		public byte idk2;
-		public byte idk3;
-		public ushort idk4;
-		public ushort idk5;
+		public List<Int32> Triangles = new List<Int32>();
+		public List<Vector3> Verts = new List<Vector3>();
+		public Int32 BrushIndex;
+		public Byte idk2;
+		public Byte idk3;
+		public UInt16 idk4;
+		public UInt16 idk5;
 
 		// todo : needs research.  this presumably detects the convex that wraps an entity with multiple solids, which we won't want to actually generate
-		public bool Skip => idk2 == 5;
+		public Boolean Skip => idk2 == 5;
 
 		public override string ToString()
 		{
@@ -130,10 +131,10 @@ namespace uSource.Formats.Source.VBSP
 
 	public class PhysModelSolid
 	{
-		public int vphysicsID;
-		public short version;
-		public short modelType;
-		public bool Fluid;
+		public Int32 vphysicsID;
+		public Int16 version;
+		public Int16 modelType;
+		public Boolean Fluid;
 		public List<PhysModelConvex> Convexes = new List<PhysModelConvex>();
 		public GameObject ConvexContainer;
 	}
