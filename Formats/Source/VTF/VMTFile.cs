@@ -203,7 +203,7 @@ namespace uSource.Formats.Source.VTF
                     //TODO: Fix vector2 parse
                     if (ContainsParma("$detailscale"))
                     {
-                        Vector2 DetailScale = GetParma("$detailscale").ToVector2();
+                        Vector2 DetailScale = GetVector2("$detailscale");
                         Material.SetTextureScale("_Detail", DetailScale);
                     }
 
@@ -315,6 +315,34 @@ namespace uSource.Formats.Source.VTF
         public Single GetSingle(String parma)
         {
             return Converters.ToSingle(GetParma(parma));//float.Parse(Items[Data]);
+        }
+
+        public Vector3 GetVector3(String parma)
+        {
+            parma = GetParma(parma);
+
+            Int32 BracketOpenIndex = parma.IndexOfAny(new Char[] { '[', '{' });
+            if (BracketOpenIndex != -1)
+                parma = parma.Remove(BracketOpenIndex, 1);
+
+            Int32 BracketCloseIndex = parma.IndexOfAny(new Char[] { ']', '}' });
+            if (BracketCloseIndex != -1)
+                parma = parma.Remove(BracketCloseIndex, 1);
+
+            return parma.ToVector3();
+        }
+
+        public Vector2 GetVector2(String parma)
+        {
+            Vector2 Result;
+
+            Vector3 TempVector = GetVector3(parma);
+            Result.x = TempVector.x;
+            Result.y = TempVector.y;
+            if (Result.y == 0f)
+                Result.y = Result.x;
+
+            return Result;
         }
 
         public Int32 GetInteger(String parma)
