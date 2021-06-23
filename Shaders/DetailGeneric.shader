@@ -4,6 +4,7 @@
 	{
 		_Color ("Main Color", Color) = (1,1,1,1)
 		_MainTex ("Base (RGB)", 2D) = "white" {}
+		_Cull("Cull State", Int) = 2
 		_Detail("Detail (RGB)", 2D) = "white" {}
 		_DetailFactor("Detail Blend Factor", Range(0,1)) = 0
 		_DetailBlendMode("Detail Blend Mode", Int) = 0
@@ -13,6 +14,8 @@
 	{
 		Tags { "RenderType"="Opaque" }
 		LOD 200
+
+		Cull[_Cull]
 
 		CGPROGRAM
 		#pragma surface surf Lambert
