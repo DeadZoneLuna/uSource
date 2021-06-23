@@ -40,7 +40,7 @@ namespace uSource.Formats.Source.VBSP
             Int32 AnglesIndex = Data.FindIndex(n => n == "angles");
             if (AnglesIndex != -1)
             {
-                Vector3 EulerAngles = Converters.ToVector3(Data[AnglesIndex + 1]);
+                Vector3 EulerAngles = Data[AnglesIndex + 1].ToVector3();
 
                 EulerAngles = new Vector3(EulerAngles.x, -EulerAngles.y, -EulerAngles.z);
 
@@ -50,7 +50,7 @@ namespace uSource.Formats.Source.VBSP
                 Int32 PitchIndex = Data.FindIndex(n => n == "pitch");
                 //Lights
                 if (PitchIndex != -1)
-                    EulerAngles.x = -Converters.ToSingle(Data[PitchIndex + 1]);
+                    EulerAngles.x = -Data[PitchIndex + 1].ToSingle();
 
                 transform.eulerAngles = EulerAngles;
             }
@@ -78,9 +78,9 @@ namespace uSource.Formats.Source.VBSP
                 }
 
                 lensFlare.flare = VBSPFile.GlowFlare;
-                lensFlare.brightness = Converters.ToSingle(Data[Data.FindIndex(n => n == "scale") + 1]);
-                lensFlare.fadeSpeed = Converters.ToSingle(Data[Data.FindIndex(n => n == "GlowProxySize") + 1]);
-                lensFlare.color = Converters.ToColor32(Data[Data.FindIndex(n => n == "rendercolor") + 1]);
+                lensFlare.brightness = Data[Data.FindIndex(n => n == "scale") + 1].ToSingle();
+                lensFlare.fadeSpeed = Data[Data.FindIndex(n => n == "GlowProxySize") + 1].ToSingle();
+                lensFlare.color = Data[Data.FindIndex(n => n == "rendercolor") + 1].ToColor32();
 
                 return;
             }
@@ -99,7 +99,7 @@ namespace uSource.Formats.Source.VBSP
                 Camera skyCamera = transform.gameObject.AddComponent<Camera>();
 
                 CameraFly camFly = playerCamera.gameObject.AddComponent<CameraFly>();
-                camFly.skyScale = Converters.ToSingle(Data[Data.FindIndex(n => n == "scale") + 1]);
+                camFly.skyScale = Data[Data.FindIndex(n => n == "scale") + 1].ToSingle();
                 camFly.offset3DSky = transform.position;
                 camFly.skyCamera = skyCamera.transform;
 
@@ -121,7 +121,7 @@ namespace uSource.Formats.Source.VBSP
                 //It can be integrated for Unity?
                 //String[] color = Data[Data.FindIndex(n => n == "color") + 1].Split(' ');
                 //RenderSettings.subtractiveShadowColor = new Color32(Byte.Parse(color[0]), Byte.Parse(color[1]), Byte.Parse(color[2]), 255);
-                RenderSettings.ambientGroundColor = Converters.ToColor(Data[Data.FindIndex(n => n == "color") + 1]);
+                RenderSettings.ambientGroundColor = Data[Data.FindIndex(n => n == "color") + 1].ToColor();
 
                 //Set light direction by shadow_control
                 if (VBSPFile.LightEnvironment != null)
@@ -148,7 +148,7 @@ namespace uSource.Formats.Source.VBSP
 
                     //TODO: Correct parse ambient color
                     String _ambient = Data[Data.FindIndex(n => n == "_ambient") + 1];
-                    ambientLight = Converters.ToColor(_ambient);
+                    ambientLight = _ambient.ToColor();
                     RenderSettings.ambientLight = ambientLight;
 
                     //Set light direction by shadow_control
@@ -170,7 +170,7 @@ namespace uSource.Formats.Source.VBSP
                     else if (Classname.Equals("light_environment"))
                         Light.type = LightType.Directional;
 
-                    Vector4 _lightColor = Converters.ToColorVec(Data[Data.FindIndex(n => n == "_light") + 1]);
+                    Vector4 _lightColor = Data[Data.FindIndex(n => n == "_light") + 1].ToColorVec();
                     Single intensity = _lightColor.w;
                     Single m_Attenuation0 = 0;
                     Single m_Attenuation1 = 0;
@@ -185,12 +185,12 @@ namespace uSource.Formats.Source.VBSP
                         if (Light.type == LightType.Spot)
                         {
                             //Single inner_cone = Converters.ToSingle(Data[Data.FindIndex(n => n == "_cone2") + 1]);
-                            Single cone = Converters.ToSingle(Data[Data.FindIndex(n => n == "_cone") + 1]) * 2;
+                            Single cone = Data[Data.FindIndex(n => n == "_cone") + 1].ToSingle() * 2;
                             //radius -= inner_cone / cone;
                             Light.spotAngle = Mathf.Clamp(cone, 0, 179);
                         }
 
-                        Single _distance = Converters.ToInt32(Data[Data.FindIndex(n => n == "_distance") + 1]);
+                        Single _distance = Data[Data.FindIndex(n => n == "_distance") + 1].ToInt32();
 
                         if (_distance != 0)
                         {
@@ -199,13 +199,13 @@ namespace uSource.Formats.Source.VBSP
                         }
                         else
                         {
-                            Single _fifty_percent_distance = Converters.ToSingle(Data[Data.FindIndex(n => n == "_fifty_percent_distance") + 1]);
+                            Single _fifty_percent_distance = Data[Data.FindIndex(n => n == "_fifty_percent_distance") + 1].ToSingle();
                             Boolean isFifty = _fifty_percent_distance != 0;
 
                             if (isFifty)
                             {
                                 //New light style
-                                Single _zero_percent_distance = Converters.ToSingle(Data[Data.FindIndex(n => n == "_zero_percent_distance") + 1]);
+                                Single _zero_percent_distance = Data[Data.FindIndex(n => n == "_zero_percent_distance") + 1].ToSingle();
 
                                 if (_zero_percent_distance < _fifty_percent_distance)
                                 {
@@ -232,9 +232,9 @@ namespace uSource.Formats.Source.VBSP
                             else
                             {
                                 //Old light style
-                                Single constant_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_constant_attn") + 1]);
-                                Single linear_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_linear_attn") + 1]);
-                                Single quadratic_attn = Converters.ToSingle(Data[Data.FindIndex(n => n == "_quadratic_attn") + 1]);
+                                Single constant_attn = Data[Data.FindIndex(n => n == "_constant_attn") + 1].ToSingle();
+                                Single linear_attn = Data[Data.FindIndex(n => n == "_linear_attn") + 1].ToSingle();
+                                Single quadratic_attn = Data[Data.FindIndex(n => n == "_quadratic_attn") + 1].ToSingle();
 
                                 // old-style manually typed quadrtiac coefficients
                                 if (quadratic_attn < 0.001)

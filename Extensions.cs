@@ -9,11 +9,11 @@ using UnityEngine;
 
 namespace uSource
 {
-#if !NET_4_6
+#if NET_2_0 || NET_2_0_SUBSET
     /// <summary>
-    /// Extentions for enums.
+    /// Extention for enums
     /// </summary>
-    public static class EnumExtensions
+    public static class EnumExtension
     {
         /// <summary>
         /// A FX 3.5 way to mimic the FX4 "HasFlag" method.
@@ -30,21 +30,19 @@ namespace uSource
             }
 
             Convert.ToUInt64(value);
-            ulong num = Convert.ToUInt64(value);
-            ulong num2 = Convert.ToUInt64(variable);
+            UInt64 num = Convert.ToUInt64(value);
+            UInt64 num2 = Convert.ToUInt64(variable);
 
             return (num2 & num) == num;
         }
     }
 #endif
 
-    public static class Converters
+    /// <summary>
+    /// Extension to convert entities parameters
+    /// </summary>
+    public static class ConvertersExtension
     {
-        public static String ToString(this String param)
-        {
-            return param;
-        }
-
         public static Int32 ToInt32(this String param, Int32 defValue = 0)
         {
             Int32 intVal;
@@ -77,7 +75,8 @@ namespace uSource
 
         public static Color32 ToColor32(this String param)
         {
-            if (param == null) return new Color32(0x00, 0x00, 0x00, 255);
+            if (param == null) 
+                return new Color32(0x00, 0x00, 0x00, 255);
 
             var split0 = param.IndexOf(' ');
             var split1 = split0 == -1 ? -1 : param.IndexOf(' ', split0 + 1);
@@ -93,7 +92,8 @@ namespace uSource
 
         public static Color ToColor(this String param)
         {
-            if (param == null) return new Color(0, 0, 0, 1);
+            if (param == null) 
+                return new Color(0, 0, 0, 1);
 
             var split0 = param.IndexOf(' ');
             var split1 = split0 == -1 ? -1 : param.IndexOf(' ', split0 + 1);
@@ -103,10 +103,6 @@ namespace uSource
             var g = split0 == -1 ? 0 : split1 == -1 ? ToInt32(param.Substring(split0 + 1)) : ToInt32(param.Substring(split0 + 1, split1 - split0 - 1));
             var b = split1 == -1 ? 0 : split2 == -1 ? ToInt32(param.Substring(split1 + 1)) : ToInt32(param.Substring(split1 + 1, split2 - split1 - 1));
             var a = split2 == -1 ? 255 : ToInt32(param.Substring(split2 + 1));
-
-            //Single Pow = Mathf.Pow(2, a / 255f);
-
-            //pow( r / 255.0, 2.2 ) * 255
 
             Color color = new Vector4(ToLinearF(r), ToLinearF(g), ToLinearF(b), ToLinearF(a));
 
@@ -131,7 +127,8 @@ namespace uSource
 
         public static Vector4 ToColorVec(this String param)
         {
-            if (param == null) return new Color(0, 0, 0, 200);
+            if (param == null) 
+                return new Color(0, 0, 0, 200);
 
             var split0 = param.IndexOf(' ');
             var split1 = split0 == -1 ? -1 : param.IndexOf(' ', split0 + 1);
@@ -143,15 +140,6 @@ namespace uSource
             var a = split2 == -1 ? 200 : ToInt32(param.Substring(split2 + 1));
 
             return new Vector4(r, g, b, a);
-        }
-
-        public static Color GetColorFromHDR(this Color color)
-        {
-            color.r /= color.a;
-            color.g /= color.a;
-            color.b /= color.a;
-
-            return color;
         }
 
         public static Int32 ToAlpha(this String param)
@@ -166,13 +154,28 @@ namespace uSource
         }
     }
 
-    public static class ArrayExtensions
+    /// <summary>
+    /// Extension for Arrays
+    /// </summary>
+    public static class ArrayExtension
     {
 
         public static void Add<T>(ref T[] array, T item)
         {
             System.Array.Resize(ref array, array.Length + 1);
             array[array.Length - 1] = item;
+        }
+
+        public static T[] RemoveAt<T>(this T[] source, Int32 index)
+        {
+            T[] dest = new T[source.Length - 1];
+            if (index > 0)
+                Array.Copy(source, 0, dest, 0, index);
+
+            if (index < source.Length - 1)
+                Array.Copy(source, index + 1, dest, index, source.Length - index - 1);
+
+            return dest;
         }
 
         public static Boolean ArrayEquals<T>(T[] lhs, T[] rhs)
@@ -315,7 +318,18 @@ namespace uSource
         }
     }
 
-    public static class OtherExt
+    public static class EnumerableExtension
+    {
+        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, Int32 N)
+        {
+            return source.Skip(Math.Max(0, source.Count() - N));
+        }
+    }
+
+    /// <summary>
+    /// Extension for Meshes
+    /// </summary>
+    public static class MeshExtension
     {
         public static void ReverseNormals(this Mesh mesh)
         {
@@ -336,7 +350,13 @@ namespace uSource
                 mesh.SetTriangles(triangles, m);
             }
         }
+    }
 
+    /// <summary>
+    /// Extension for GameObjects
+    /// </summary>
+    public static class GameObjectExtension
+    {
         public static GameObject CreateSubModel(this Transform source, SkinnedMeshRenderer skinnedMesh)
         {
             GameObject Temp = new GameObject(skinnedMesh.gameObject.name);
@@ -348,7 +368,7 @@ namespace uSource
 
             for (Int32 i = 0; i < skinnedMesh.bones.Length; i++)
             {
-                ObjectBones[i] = FindChildByName(skinnedMesh.bones[i].name, source);
+                ObjectBones[i] = TransformExtension.FindChildByName(skinnedMesh.bones[i].name, source);
             }
 
             TempRenderer.bones = ObjectBones;
@@ -357,8 +377,14 @@ namespace uSource
             TempRenderer.updateWhenOffscreen = true;
             return TempRenderer.gameObject;
         }
+    }
 
-        private static Transform FindChildByName(String Name, Transform GO)
+    /// <summary>
+    /// Extension Transforms
+    /// </summary>
+    public static class TransformExtension
+    {
+        public static Transform FindChildByName(String Name, Transform GO)
         {
             Transform ReturnObj;
 
@@ -376,47 +402,79 @@ namespace uSource
             return null;
         }
 
-        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, Int32 N)
+        public static String GetTransformPath(this Transform To, Transform From)
         {
-            return source.Skip(Math.Max(0, source.Count() - N));
+            Transform Target = To;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+            if (To != From)
+            {
+                while (true)
+                {
+                    sb.Insert(0, Target.name + "/");
+                    Target = Target.parent;
+                    if (Target == null || Target == From)
+                        break;
+
+                }
+                sb.Remove(sb.Length - 1, 1);
+            }
+
+            return sb.ToString();
         }
+    }
 
-        public static T[] RemoveAt<T>(this T[] source, Int32 index)
-        {
-            T[] dest = new T[source.Length - 1];
-            if (index > 0)
-                Array.Copy(source, 0, dest, 0, index);
-
-            if (index < source.Length - 1)
-                Array.Copy(source, index + 1, dest, index, source.Length - index - 1);
-
-            return dest;
-        }
-
+    /// <summary>
+    /// Extension maths
+    /// </summary>
+    public static class MathExtension
+    {
         public static Quaternion Normalize(this Quaternion q)
         {
+            Quaternion Result;
+
             Single mag = Mathf.Sqrt(Quaternion.Dot(q, q));
 
             if (mag < Mathf.Epsilon)
                 return Quaternion.identity;
 
-            return new Quaternion(q.x / mag, q.y / mag, q.z / mag, q.w / mag);
+            Result.x = q.x / mag;
+            Result.y = q.y / mag;
+            Result.z = q.z / mag;
+            Result.w = q.w / mag;
+
+            return Result;
+            //return new Quaternion(q.x / mag, q.y / mag, q.z / mag, q.w / mag);
         }
 
-        public static Quaternion ConvertToUnity(this Quaternion input)
+        public static Quaternion SwapZYQuat(this Quaternion input)
         {
-            return new Quaternion(
+            //Temp remember Y
+            Single TempY = -input.y;
+
+            input.x = -input.x;         // -(  right = -left  )
+            input.y = -input.z;         // -(     up =  up     )
+            input.z = TempY;            // -(forward =  forward)
+
+            return input;
+
+            /*return new Quaternion(
                 -input.x,   // -(  right = -left  )
                 -input.z,   // -(     up =  up     )
                 -input.y,   // -(forward =  forward)
                  input.w
-            );
+            );*/
         }
 
         public static Quaternion GetNormalized(this Quaternion q)
         {
             Single f = 1f / Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-            return new Quaternion(q.x * f, q.y * f, q.z * f, q.w * f);
+
+            q.x = q.x * f;
+            q.y = q.y * f;
+            q.z = q.z * f;
+            q.w = q.w * f;
+            return q;//new Quaternion(q.x * f, q.y * f, q.z * f, q.w * f);
         }
 
         public static Vector3 Multiply(this Vector3 a, Vector3 d)
@@ -427,32 +485,17 @@ namespace uSource
             return a;
         }
 
-        public static Vector3 Multiply2 (this Vector3 a, Vector3 d)
+        public static Vector3 Multiply2(this Vector3 a, Vector3 d)
         {
             return new Vector3(a.x * d.x, a.y * d.y, a.z * d.z);
         }
+    }
 
-        public static String GetTransformPath(this Transform to, Transform from)
-        {
-            var target = to;
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            if (to != from)
-            {
-                while (true)
-                {
-
-                    sb.Insert(0, target.name + "/");
-                    target = target.parent;
-                    if (target == null || target == from) break;
-
-                }
-                sb.Remove(sb.Length - 1, 1);
-            }
-            var calculateTransformPath = sb.ToString();
-
-            return calculateTransformPath;
-        }
-
+    /// <summary>
+    /// Extensions of any stuff
+    /// </summary>
+    public static class OtherExtension
+    {
         public static short[] ReadAnimationFrameValues(this System.IO.BinaryReader br, Int32 count)
         {
             /*
@@ -461,51 +504,55 @@ namespace uSource
              * Byte uncompressed_length - uncompressed number of values in run
              * short values[compressed_length] - values in the run, the last value is repeated to reach the uncompressed length
              */
-            var values = new short[count];
+            Int16[] values = new Int16[count];
 
             for (var i = 0; i < count; /* i = i */)
             {
-                var run = br.ReadBytes(2); // read the compressed and uncompressed lengths
-                var vals = br.ReadShortArray(run[0]); // read the compressed data
-                for (var j = 0; j < run[1] && i < count; i++, j++)
+                Byte[] run = br.ReadBytes(2); // read the compressed and uncompressed lengths
+                Int16[] vals = br.ReadShortArray(run[0]); // read the compressed data
+                for (Int32 j = 0; j < run[1] && i < count; i++, j++)
                 {
-                    var idx = Math.Min(run[0] - 1, j); // value in the data or the last value if we're past the end
+                    Int32 idx = Math.Min(run[0] - 1, j); // value in the data or the last value if we're past the end
                     values[i] = vals[idx];
                 }
             }
 
             return values;
         }
+    }
 
-        public static object GetMemberValue(this MemberInfo member, object obj)
+    /// <summary>
+    /// Extension reflections
+    /// </summary>
+    public static class ReflectionExtension
+    {
+        public static object GetMemberValue(this MemberInfo Member, object Obj)
         {
-            if (member is FieldInfo)
-            {
-                return (member as FieldInfo).GetValue(obj);
-            }
-            if (member is PropertyInfo)
-            {
-                return (member as PropertyInfo).GetGetMethod(nonPublic: true).Invoke(obj, null);
-            }
-            throw new ArgumentException("Can't get the value of a " + member.GetType().Name);
+            if (Member is FieldInfo)
+                return (Member as FieldInfo).GetValue(Obj);
+
+            if (Member is PropertyInfo)
+                return (Member as PropertyInfo).GetGetMethod(nonPublic: true).Invoke(Obj, null);
+
+            throw new ArgumentException("Can't get the value of a " + Member.GetType().Name);
         }
 
-        public static System.Text.StringBuilder PrintProperties(this object o, System.Text.StringBuilder Input = null)
+        public static System.Text.StringBuilder PrintProperties(this object Obj, System.Text.StringBuilder Input = null)
         {
-            if(Input == null)
+            if (Input == null)
                 Input = new System.Text.StringBuilder();
 
-            IEnumerable<MemberInfo> Members = o.GetType().GetProperties().Where(p => p.CanRead || p.CanWrite).Cast<MemberInfo>().Concat(o.GetType().GetFields());
+            IEnumerable<MemberInfo> Members = Obj.GetType().GetProperties().Where(p => p.CanRead || p.CanWrite).Cast<MemberInfo>().Concat(Obj.GetType().GetFields());
 
-            Input.AppendLine(o.GetType().Name);
+            Input.AppendLine(Obj.GetType().Name);
             Input.AppendLine("{");
 
             foreach (MemberInfo a in Members)
             {
                 if (!a.IsDefined(typeof(ObsoleteAttribute), true))
                 {
-                    object value = a is FieldInfo ? ((FieldInfo)a).GetValue(o) : a is MemberInfo ? a.GetMemberValue(o) : ((PropertyInfo)a).GetValue(o, null);
-                    Input.AppendLine(String.Format("     {0} = {1}", a.Name, value != null ? value.ToString() : "<NULL>"));
+                    object Value = a is FieldInfo ? ((FieldInfo)a).GetValue(Obj) : a is MemberInfo ? a.GetMemberValue(Obj) : ((PropertyInfo)a).GetValue(Obj, null);
+                    Input.AppendLine(String.Format("\t{0} = {1}", a.Name, Value != null ? Value.ToString() : "<NULL>"));
                 }
             }
 
@@ -515,6 +562,9 @@ namespace uSource
         }
     }
 
+    /// <summary>
+    /// Extension streams
+    /// </summary>
     public static class StreamExtension
     {
         public static void CopyToLimited(this System.IO.Stream inputStream, System.IO.Stream outputStream, long limit, Int32 bufferSize = 81920)
@@ -558,6 +608,9 @@ namespace uSource
         }
     }
 
+    /// <summary>
+    /// Extension BinaryReaders
+    /// </summary>
     public static class BinaryExtension
     {
         /// <summary>
