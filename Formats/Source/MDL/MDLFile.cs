@@ -529,16 +529,16 @@ namespace uSource.Formats.Source.MDL
                             #endregion
 
                             #region LOD
-                            ModelLODHeader_t LOD = Model.LODData[LODID];
+                            ModelLODHeader_t ModelLOD = Model.LODData[LODID];
 
                             if (LODExist)
                             {
-                                if (LOD.switchPoint == 0)
-                                    LOD.switchPoint = MaxSwitchPoint;
+                                if (ModelLOD.switchPoint == 0)
+                                    ModelLOD.switchPoint = MaxSwitchPoint;
                                 else
-                                    LOD.switchPoint = MaxSwitchPoint - LOD.switchPoint;
+                                    ModelLOD.switchPoint = MaxSwitchPoint - ModelLOD.switchPoint;
 
-                                LOD.switchPoint -= LOD.switchPoint * uLoader.SubstractLODPrecent;
+                                ModelLOD.switchPoint -= ModelLOD.switchPoint * uLoader.SubstractLODPrecent;
                             }
                             #endregion
 
@@ -669,7 +669,7 @@ namespace uSource.Formats.Source.MDL
                                 else if (FirstLODObject != null)
                                     MeshObject.transform.parent = FirstLODObject;
 
-                                LODs[LODID] = new LOD(LOD.switchPoint / MaxSwitchPoint, new Renderer[] { Renderer });
+                                LODs[LODID] = new LOD(ModelLOD.switchPoint / MaxSwitchPoint, new Renderer[] { Renderer });
                             }
 
                             if (uLoader.EnableLODParsing && DetailModeEnabled)
