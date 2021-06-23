@@ -209,14 +209,17 @@ namespace uSource
         #endregion
 
         #region Misc Stuff
+        //TODO: fix dot slashes
         public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
+        public static Regex subfolderRegex = new Regex(@"\b(models/|materials/|sounds/)\b", RegexOptions.Compiled);
         public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
         {
-            //TODO: make sure if subfolder was found only at the beginning 
-            //As there may including special names folder with subfolder name & this will be create problems with normalize
             Int32 SubIndex = FileName.IndexOf(SubFolder, StringComparison.Ordinal);
             if (SubIndex >= 0)
-                FileName = FileName.Remove(SubIndex, SubFolder.Length);
+            {
+                if(subfolderRegex.IsMatch(FileName))
+                    FileName = FileName.Remove(SubIndex, SubFolder.Length);
+            }
 
             Int32 ExtensionIndex = FileName.LastIndexOf(FileExtension, StringComparison.Ordinal);
             if (ExtensionIndex >= 0)
