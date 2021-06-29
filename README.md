@@ -45,7 +45,7 @@ uSource is a plugin for importing MDL / BSP / VMT / VTF and etc... resources to 
 | Skinfamilies                   | :x:                                                                   |
 | Attachments                    | :x:                                                                   |
 | Flexes / Vertex Animations     | :x:                                                                   |
-| Meshes (With skinning)         | :heavy_check_mark: (Lod's or some 49's mdl may not have some meshes!) |
+| Meshes (With skinning)         | :heavy_check_mark: (Some mdl version 49 may not have meshes!)         |
 | Physics Model                  | :x:                                                                   |
 | Vertex Lighting (Static props) | :x:                                                                   |
 
