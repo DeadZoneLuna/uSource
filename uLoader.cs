@@ -63,14 +63,14 @@ namespace uSource
             if (!uLoader.PresetLoaded)
                 uLoader.LoadPreset();
 
-            GUILayout.BeginVertical("minibutton");
+            GUILayout.BeginVertical("box");
             {
                 if (uLoader.GlobalSettingsFoldout = EditorGUILayout.Foldout(uLoader.GlobalSettingsFoldout, "Global Settings", true, EditorStyles.miniButtonLeft))
                 {
                     uLoader.RootPath = EditorGUILayout.TextField("Root path:", uLoader.RootPath);
 
                     #region Mod Settings
-                    GUILayout.BeginVertical("minibutton");
+                    GUILayout.BeginVertical("box");
                     {
                         if (uLoader.ModSettingsFoldout = EditorGUILayout.Foldout(uLoader.ModSettingsFoldout, "Mod Settings", true, EditorStyles.miniButtonLeft))
                         {
@@ -140,7 +140,7 @@ namespace uSource
                     #endregion
 
                     #region LOD Settings
-                    GUILayout.BeginVertical("minibutton");
+                    GUILayout.BeginVertical("box");
                     {
                         if (uLoader.LodSettingsFoldout = EditorGUILayout.Foldout(uLoader.LodSettingsFoldout, "Models LOD Settings", true, EditorStyles.miniButtonLeft))
                         {
@@ -230,7 +230,7 @@ namespace uSource
             GUILayout.Space(2);
 
             #region BSP
-            GUILayout.BeginVertical("minibutton");
+            GUILayout.BeginVertical("box");
             {
                 if (uLoader.BSPSettingsFoldout = EditorGUILayout.Foldout(uLoader.BSPSettingsFoldout, "BSP Import Settings", true, EditorStyles.miniButtonLeft))
                 {
@@ -240,7 +240,7 @@ namespace uSource
                     uLoader.ParseDecals = EditorGUILayout.ToggleLeft("Parse decals (Beta)", uLoader.ParseDecals);
                     uLoader.DebugEntities = EditorGUILayout.ToggleLeft("Debug entities", uLoader.DebugEntities);
                     #region Lightmap settings
-                    GUILayout.BeginVertical("minibutton");
+                    GUILayout.BeginVertical("box");
                     if (uLoader.LightmapSettingsFoldout = EditorGUILayout.Foldout(uLoader.LightmapSettingsFoldout, "Lightmap Settings", true, EditorStyles.miniButtonLeft))
                     {
                         uLoader.ParseLightmaps = EditorGUILayout.ToggleLeft("Parse original lightmaps (BSP)", uLoader.ParseLightmaps);
@@ -275,7 +275,7 @@ namespace uSource
                     #endregion
 
                     #region Lighting Settings
-                    GUILayout.BeginVertical("minibutton");
+                    GUILayout.BeginVertical("box");
                     if (uLoader.LightingSettingsFoldout = EditorGUILayout.Foldout(uLoader.LightingSettingsFoldout, "Lighting Settings", true, EditorStyles.miniButtonLeft))
                     {
                         uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights (Beta)", uLoader.ParseLights);
@@ -337,7 +337,7 @@ namespace uSource
             GUILayout.Space(2);
 
             #region MDL
-            GUILayout.BeginVertical("minibutton");
+            GUILayout.BeginVertical("box");
             {
                 if (uLoader.MDLSettingsFoldout = EditorGUILayout.Foldout(uLoader.MDLSettingsFoldout, "MDL Import Settings", true, EditorStyles.miniButtonLeft))
                 {
@@ -383,7 +383,7 @@ namespace uSource
             GUILayout.Space(2);
 
             #region VMT
-            GUILayout.BeginVertical("minibutton");
+            GUILayout.BeginVertical("box");
             {
                 if (uLoader.VMTSettingsFoldout = EditorGUILayout.Foldout(uLoader.VMTSettingsFoldout, "VMT Settings", true, EditorStyles.miniButtonLeft))
                 {
