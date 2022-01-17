@@ -482,7 +482,6 @@ namespace uSource.Formats.Source.VBSP
                         MeshInfo.Add(BSP_TexData[BSP_TexInfo[BSP_Faces[i].TexInfo].TexData].NameStringTableID, new List<Int32>());
 
                     MeshInfo[BSP_TexData[BSP_TexInfo[BSP_Faces[i].TexInfo].TexData].NameStringTableID].Add(i);
-                    MeshInfo[BSP_TexData[BSP_TexInfo[BSP_Faces[i].TexInfo].TexData].NameStringTableID].Add(i);
                 }
 
                 for (Int32 i = 0; i < BSP_TextureStringData.Length; i++)
