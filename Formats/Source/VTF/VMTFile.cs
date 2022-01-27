@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace uSource.Formats.Source.VTF
@@ -37,32 +38,39 @@ namespace uSource.Formats.Source.VTF
             return GetParam(param).ToSingle();
         }
 
-        public Vector3 GetVector3(String param)
+        public static Regex FloatRegex = new Regex(@"[+-]?([0-9]*[.])?[0-9]+");
+        public Vector4 GetVector4(String param, Boolean swap = false)
         {
-            param = GetParam(param);
+            MatchCollection matches = FloatRegex.Matches(GetParam(param));
+            int matchSize = matches.Count;
+            Vector4 result;
+            result.x = matchSize >= 1 ? matches[0].Value.ToSingle() : 0;
+            result.y = matchSize >= 2 ? matches[1].Value.ToSingle() : swap ? result.x : 0;
+            result.z = matchSize >= 3 ? matches[2].Value.ToSingle() : swap ? result.y : 0;
+            result.w = matchSize > 3 ? matches[2].Value.ToSingle() : swap ? result.z : 0;
 
-            Int32 BracketOpenIndex = param.IndexOfAny(new Char[] { '[', '{' });
-            if (BracketOpenIndex != -1)
-                param = param.Remove(BracketOpenIndex, 1);
-
-            Int32 BracketCloseIndex = param.IndexOfAny(new Char[] { ']', '}' });
-            if (BracketCloseIndex != -1)
-                param = param.Remove(BracketCloseIndex, 1);
-
-            return param.ToVector3();
+            return result;
         }
 
-        public Vector2 GetVector2(String param)
+        public Vector3 GetVector3(String param, Boolean swap = false)
         {
-            Vector2 Result;
+            Vector4 TempVector = GetVector4(param, swap);
+            Vector3 result;
+            result.x = TempVector.x;
+            result.y = TempVector.y;
+            result.z = TempVector.z;
 
-            Vector3 TempVector = GetVector3(param);
-            Result.x = TempVector.x;
-            Result.y = TempVector.y;
-            if (Result.y == 0f)
-                Result.y = Result.x;
+            return result;
+        }
 
-            return Result;
+        public Vector2 GetVector2(String param, Boolean swap = false)
+        {
+            Vector4 TempVector = GetVector4(param, swap);
+            Vector2 result;
+            result.x = TempVector.x;
+            result.y = TempVector.y;
+
+            return result;
         }
 
         public Int32 GetInteger(String param)
@@ -198,7 +206,7 @@ namespace uSource.Formats.Source.VTF
                 BaseTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
 
                 //To avoid "NullReferenceException"
-                if(BaseTexture != null)
+                if (BaseTexture != null)
                     HasAlpha = BaseTexture.alphaIsTransparency;
             }
 
@@ -206,7 +214,7 @@ namespace uSource.Formats.Source.VTF
             Material.name = FileName;
             Material.color = GetColor();
 
-            if(BaseTexture != null)
+            if (BaseTexture != null)
                 Material.mainTexture = BaseTexture;
 
             if (ContainsParam("$basetexture2"))
@@ -260,7 +268,7 @@ namespace uSource.Formats.Source.VTF
                     Material.SetTexture(PropertyName, uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, PropertyName } })[0, 0]);
 
                     if (ContainsParam("$detailscale"))
-                        Material.SetTextureScale("_Detail", GetVector2("$detailscale"));
+                        Material.SetTextureScale("_Detail", GetVector2("$detailscale", true));
 
                     if (Material.HasProperty("_DetailFactor"))
                     {
@@ -302,7 +310,7 @@ namespace uSource.Formats.Source.VTF
 
                 if ((IsTrue("$translucent") && HasAlpha) || (ContainsParam("$alpha") && IsTrue("$alpha", false) == false))
                 {
-                    if(shader.Equals("unlitgeneric")) 
+                    if (shader.Equals("unlitgeneric"))
                         return Shader.Find(uLoader.TranslucentUnlitShader);
 
                     return Shader.Find(uLoader.TranslucentShader);
