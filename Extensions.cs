@@ -6,9 +6,101 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using System.Text.RegularExpressions;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace uSource
 {
+    public static class PathExtension
+    {
+        public static string SeparatorChar = "/";
+
+        /// <summary>
+        /// Get extension file
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="ext"></param>
+        /// <returns>File path without extension</returns>
+        public static string GetFileExtension(this string filePath, out string ext)
+        {
+            ext = "";
+            int fileExtPos = filePath.LastIndexOf('.');
+            if (fileExtPos > filePath.LastIndexOf('\\'))
+            {
+                int extSize = filePath.Length - fileExtPos;
+                ext = filePath.Substring(fileExtPos, extSize);
+                if (ext.Length >= 1) filePath = filePath.Remove(fileExtPos, extSize);
+                ext = ext.Length > 1 ? ext.ToLower() : "";
+            }
+
+            return filePath;
+        }
+
+        /// <summary>
+        /// Regular expression to find slashes and slashes with dot
+        /// </summary>
+        public static Regex SlashRegex = new Regex(@"([\\/]|(\.+/)|(\.+\\))+", RegexOptions.ExplicitCapture);
+        public static string NormalizeSlashes(this string input, bool toLower = false)
+        {
+            return SlashRegex.Replace(toLower ? input.ToLower() : input, SeparatorChar);
+        }
+
+        /// <summary>
+        /// Normalize paths from a painful format "././\materials\models//folder///file.vmt" to "materials/models/folder/file.vmt"
+        /// </summary>
+        /// <param name="filePath">Input painful path</param>
+        /// <param name="subFolder">Needed to normalize sub folder in path (ex: materials)</param>
+        /// <returns>Normalized path</returns>
+        public static string NormalizePath(this string filePath, string ext, string subFolder, bool replaceExtIfNotEqual = true, bool outputWithExt = true)
+        {
+            string tempExt = string.Empty;
+            if (filePath != null && filePath.Length > 0)
+            {
+                //get split paths (RegexOptions.ExplicitCapture)
+                string[] splits = SlashRegex.Split(filePath.ToLower());
+                filePath = "";
+
+                int splitLast = splits.Length - 1;
+                for (int i = 0; i < splits.Length; i++)
+                {
+                    //skip sub folder or empty string (if exist)
+                    if ((i == 0 || i == 1) && (splits[i].Length == 0 || splits[i] == subFolder)) continue;
+
+                    //build normalized path
+                    filePath += i == splitLast ? (splits[i] = splits[i].GetFileExtension(out tempExt)) : string.Format("{0}{1}", splits[i], SeparatorChar);
+                }
+            }
+            else filePath = "";
+
+            if (replaceExtIfNotEqual && tempExt != ext) tempExt = ext;
+            return string.Format("{0}{1}{2}", subFolder, SeparatorChar, outputWithExt ? filePath + tempExt : filePath);
+        }
+    }
+
+    public static class SceneViewExtension
+    {
+        public static bool GetLightingStatus(this SceneView scene)
+        {
+#if UNITY_2019_1_OR_NEWER
+            return scene.sceneLighting;
+#else
+            return scene.m_SceneLighting;
+#endif
+        }
+
+        public static bool SetLightingStatus(this SceneView scene, bool value)
+        {
+#if UNITY_2019_1_OR_NEWER
+            return scene.sceneLighting = value;
+#else
+            return scene.m_SceneLighting = value;
+#endif
+        }
+    }
+
 #if NET_2_0 || NET_2_0_SUBSET
     /// <summary>
     /// Extention for enums
@@ -75,7 +167,7 @@ namespace uSource
 
         public static Color32 ToColor32(this String param)
         {
-            if (param == null) 
+            if (param == null)
                 return new Color32(0x00, 0x00, 0x00, 255);
 
             var split0 = param.IndexOf(' ');
@@ -92,7 +184,7 @@ namespace uSource
 
         public static Color ToColor(this String param)
         {
-            if (param == null) 
+            if (param == null)
                 return new Color(0, 0, 0, 1);
 
             var split0 = param.IndexOf(' ');
@@ -114,20 +206,9 @@ namespace uSource
             return Mathf.Clamp(color, 0, 255) / 255.0f;
         }
 
-        public static Single SRGB2Linear(this Single s)
-        {
-            Single output;
-            if (s <= 0.0404482362771082f)
-                output = s / 12.92f;
-            else
-                output = Mathf.Pow(((s + 0.055f) / 1.055f), 2.4f);
-
-            return output;
-        }
-
         public static Vector4 ToColorVec(this String param)
         {
-            if (param == null) 
+            if (param == null)
                 return new Color(0, 0, 0, 200);
 
             var split0 = param.IndexOf(' ');
@@ -151,6 +232,14 @@ namespace uSource
             var split2 = split1 == -1 ? -1 : param.IndexOf(' ', split1 + 1);
 
             return split2 == -1 ? 255 : ToInt32(param.Substring(split2 + 1));
+        }
+
+        public static Color ColorHDR(this Color col, float intensity)
+        {
+            float hue, saturation, dummy;
+            Color.RGBToHSV(col, out hue, out saturation, out dummy);
+            float brightness = Mathf.Clamp(intensity, 0.004f, 10);
+            return Color.HSVToRGB(hue, saturation, brightness, intensity > 1f);
         }
     }
 
@@ -496,6 +585,20 @@ namespace uSource
     /// </summary>
     public static class OtherExtension
     {
+        public static Vector3 GetNormalizedColor(this Vector3 intensity)
+        {
+            Vector3 color = intensity;
+            color.Normalize();
+
+            //1.0 / 2.2 = 0.45454545454
+            //Mathf.LinearToGammaSpace(color[0])
+            color[0] = Mathf.Pow(color[0], 0.45454545454f);
+            color[1] = Mathf.Pow(color[1], 0.45454545454f);
+            color[2] = Mathf.Pow(color[2], 0.45454545454f);
+
+            return color;
+        }
+
         public static short[] ReadAnimationFrameValues(this System.IO.BinaryReader br, Int32 count)
         {
             /*

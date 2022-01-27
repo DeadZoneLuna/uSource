@@ -48,7 +48,6 @@ namespace uSource.Formats.Source.VBSP
         // ======== ENTITIES ======= //
 
         public static Transform LightEnvironment;
-        public static Transform ShadowControl;
         public static Flare GlowFlare;
 
         // ======== DEBUG ======= //
@@ -62,7 +61,7 @@ namespace uSource.Formats.Source.VBSP
             if (BSP_Header.Ident != 0x50534256)
                 throw new FileLoadException(String.Format("{0}: File signature does not match 'VBSP'", BSPName));
 
-            if (BSP_Header.Version < 19 || BSP_Header.Version > 21)
+            if (BSP_Header.Version < 19 || BSP_Header.Version > 27)
                 throw new FileLoadException(String.Format("{0}: BSP version ({1}) isn't supported", BSPName, BSP_Header.Version));
 
             if (BSP_Header.Lumps[0].FileOfs == 0)
@@ -70,8 +69,10 @@ namespace uSource.Formats.Source.VBSP
                 Debug.Log("Found Left 4 Dead 2 header");
                 for (Int32 i = 0; i < BSP_Header.Lumps.Length; i++)
                 {
+                    int ver = BSP_Header.Lumps[i].FileOfs;
                     BSP_Header.Lumps[i].FileOfs = BSP_Header.Lumps[i].FileLen;
                     BSP_Header.Lumps[i].FileLen = BSP_Header.Lumps[i].Version;
+                    BSP_Header.Lumps[i].Version = ver;
                 }
             }
 
@@ -140,150 +141,170 @@ namespace uSource.Formats.Source.VBSP
             BSP_Surfedges = new Int32[BSP_Header.Lumps[13].FileLen / 4];
             BSPFileReader.ReadArrayFixed(ref BSP_Surfedges, 4, BSP_Header.Lumps[13].FileOfs);
 
-            if (uLoader.ParseLights && uLoader.UseWorldLights)
+            #region Lights
+            var WorldLightLump = BSP_Header.Lumps[15].FileLen <= 0 ? BSP_Header.Lumps[54] : BSP_Header.Lumps[15];
+            Boolean WorldLightNewFormat = WorldLightLump.Version != 0 ? true : false;
+            Int32 WorldLightSizeOf = WorldLightNewFormat ? 100 : 88;
+            BSP_WorldLights = new dworldlight_t[WorldLightLump.FileLen / WorldLightSizeOf];
+
+#if UNITY_EDITOR
+            int sceneViewSize = UnityEditor.SceneView.sceneViews.Count;
+            UnityEditor.SceneView sceneLast = null;
+            for (int i = 0; i < sceneViewSize; i++)
             {
-                Int32 WorldLightSizeOf = 88;
-                Int32 WorldLightVersion = 0;
-                Boolean WorldLightHDR = BSP_Header.Lumps[15].FileLen <= 0;
-                Int32 WorldLightOffset;
-                if (WorldLightHDR)
+                UnityEditor.SceneView currScene = (UnityEditor.SceneView)UnityEditor.SceneView.sceneViews[i];
+                if (sceneLast != null && currScene.GetLightingStatus() != sceneLast.GetLightingStatus())
                 {
-                    WorldLightVersion = BSP_Header.Lumps[54].Version;
+                    currScene.SetLightingStatus(sceneLast.GetLightingStatus());
+                    return;
+                }
 
-                    if (WorldLightVersion != 0)
-                        WorldLightSizeOf = 100;
+                if (uLoader.ParseLights && uLoader.UseDynamicLight & BSP_WorldLights.Length > 40 && currScene.GetLightingStatus())
+                {
+                    currScene.SetLightingStatus(!UnityEditor.EditorUtility.DisplayDialog("WARNING!",
+                        string.Format("More than 40~ (Total: {0}) dynamic lights detected!!! \nto avoid rendering and memory problems, turn off lighting? " +
+                        "(Lighting can be turned on back on the scene window)", BSP_WorldLights.Length),
+                        "Disable", "Close"));
+                    sceneLast = currScene;
+                }
+            }
+#endif
 
-                    BSP_WorldLights = new dworldlight_t[BSP_Header.Lumps[54].FileLen / WorldLightSizeOf];
-                    WorldLightOffset = BSP_Header.Lumps[54].FileOfs;
+            for (Int32 wID = 0; wID < BSP_WorldLights.Length; wID++)
+            {
+                BSPFileReader.BaseStream.Seek(WorldLightLump.FileOfs + (WorldLightSizeOf * wID), SeekOrigin.Begin);
+                BSP_WorldLights[wID].origin = BSPFileReader.ReadVector3D() * uLoader.UnitScale;
+                BSP_WorldLights[wID].intensity = BSPFileReader.ReadVector3D(false);
+                BSP_WorldLights[wID].normal = BSPFileReader.ReadVector3D();
+                if (WorldLightLump.Version != 0) BSPFileReader.ReadVector3D(false); // - shadow_cast_offset (skip only for updated dworldlights)
+                BSP_WorldLights[wID].cluster = BSPFileReader.ReadInt32();
+                BSP_WorldLights[wID].type = (emittype_t)BSPFileReader.ReadUInt32();
+                BSP_WorldLights[wID].style = BSPFileReader.ReadInt32();
+                BSP_WorldLights[wID].stopdot = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].stopdot2 = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].exponent = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].radius = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].constant_attn = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].linear_attn = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].quadratic_attn = BSPFileReader.ReadSingle();
+                BSP_WorldLights[wID].flags = BSPFileReader.ReadInt32();
+                BSP_WorldLights[wID].texinfo = BSPFileReader.ReadInt32();
+                BSP_WorldLights[wID].owner = BSPFileReader.ReadInt32();
+
+                dworldlight_t dlight = BSP_WorldLights[wID];
+
+                Vector3 intensity = dlight.intensity;
+                Vector3 normalizedColor = intensity.GetNormalizedColor();
+                Color color = new Color(normalizedColor.x, normalizedColor.y, normalizedColor.z, intensity.magnitude);
+
+                if (dlight.type == emittype_t.emit_skyambient)
+                {
+                    Color ambientColor = color.ColorHDR(Mathf.LinearToGammaSpace(color.a * 0.625f) * uLoader.AmbientIntensityScale);
+                    RenderSettings.ambientLight = ambientColor;
+                    RenderSettings.ambientSkyColor = ambientColor;
+                    continue;
+                }
+
+                #region Light Setup
+                if (!uLoader.ParseLights) continue;
+                Light light = new GameObject(dlight.type.ToString()).AddComponent<Light>();
+                light.color = color;
+                light.transform.parent = WorldLightsGroup;
+                light.transform.position = dlight.origin;
+                light.transform.forward = dlight.normal;
+                if (uLoader.UseDynamicLight)
+                {
+                    light.shadows = LightShadows.Soft;
+                    light.shadowBias = 0.05f;
+                }
+#if UNITY_EDITOR
+                light.lightmapBakeType = LightmapBakeType.Baked;
+                //light.gameObject.AddComponent<ObjectInfo>().infoOutput = KVObjectSerializer.Serialize(dlight);
+#endif
+
+                float maxIntensity = Mathf.Max(intensity.x, Mathf.Max(intensity.y, intensity.z));
+                if (dlight.type == emittype_t.emit_skylight)
+                {
+                    light.type = LightType.Directional;
+                    light.intensity = Mathf.LinearToGammaSpace(maxIntensity) * uLoader.LightEnvironmentScale;
+                    light.shadowCustomResolution = uLoader.CustomCascadedShadowResolution;
+                    light.shadowNormalBias = 0;
                 }
                 else
                 {
-                    WorldLightVersion = BSP_Header.Lumps[15].Version;
+                    if (dlight.exponent == 0.0) dlight.exponent = 1.0f;
 
-                    if (WorldLightVersion != 0)
-                        WorldLightSizeOf = 100;
+                    // To match earlier lighting, use quadratic...
+                    if ((dlight.constant_attn == 0.0) && (dlight.linear_attn == 0.0) && (dlight.quadratic_attn == 0.0))
+                        dlight.quadratic_attn = 1.0f;
 
-                    BSP_WorldLights = new dworldlight_t[BSP_Header.Lumps[15].FileLen / WorldLightSizeOf];
-                    WorldLightOffset = BSP_Header.Lumps[15].FileOfs;
-                }
+                    #region Compute a proper radius from attenuation factors
+                    // This keeps the behavior of the cutoff radius
+                    float minValue = color.a / uLoader.LightMinValue;
+                    float radius = dlight.radius;
 
-                // Fixup for backward compatability
-                for (Int32 wID = 0; wID < BSP_WorldLights.Length; wID++)
-                {
-                    BSPFileReader.BaseStream.Seek(WorldLightOffset + (WorldLightSizeOf * wID), SeekOrigin.Begin);
-                    //BSPFileReader.ReadType(ref BSP_WorldLights[wID], WorldLightOffset + (WorldLightSizeOf * wID));
-                    BSP_WorldLights[wID].origin = BSPFileReader.ReadVector3D();
-                    BSP_WorldLights[wID].intensity = BSPFileReader.ReadVector3D(false);
-                    BSP_WorldLights[wID].normal = BSPFileReader.ReadVector3D();
-                    if (WorldLightVersion != 0) BSPFileReader.ReadVector3D(false); // - shadow_cast_offset (skip only for updated dworldlights)
-                    BSP_WorldLights[wID].cluster = BSPFileReader.ReadInt32();
-                    BSP_WorldLights[wID].type = (emittype_t)BSPFileReader.ReadUInt32();
-                    BSP_WorldLights[wID].style = BSPFileReader.ReadInt32();
-                    BSP_WorldLights[wID].stopdot = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].stopdot2 = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].exponent = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].radius = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].constant_attn = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].linear_attn = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].quadratic_attn = BSPFileReader.ReadSingle();
-                    BSP_WorldLights[wID].flags = BSPFileReader.ReadInt32();
-                    BSP_WorldLights[wID].texinfo = BSPFileReader.ReadInt32();
-                    BSP_WorldLights[wID].owner = BSPFileReader.ReadInt32();
-
-                    dworldlight_t pLight = BSP_WorldLights[wID];
-
-                    if (pLight.type == emittype_t.emit_skyambient)
+                    if (dlight.quadratic_attn == 0.0f)
                     {
-                        //Normalize color
-                        Vector3 AmbientColor = NormalizeSourceColor(pLight);
-                        RenderSettings.ambientLight = new Color(AmbientColor.x, AmbientColor.y, AmbientColor.z, 1);
-                        RenderSettings.ambientSkyColor = RenderSettings.ambientLight;
-                        RenderSettings.ambientIntensity = Mathf.Sqrt(Vector3.Dot(AmbientColor, AmbientColor));
-                        //Normalize color
-                        continue;
-                    }
-
-                    Light uLight = new GameObject(pLight.type.ToString()).AddComponent<Light>();
-
-                    uLight.transform.parent = WorldLightsGroup;
-
-                    //Normalize color
-                    Vector3 Color = NormalizeSourceColor(pLight);
-                    //Normalize color
-
-                    if (pLight.type != emittype_t.emit_surface)
-                        uLight.intensity = Mathf.Sqrt(Vector3.Dot(Color, Color));
-                    else
-                        uLight.intensity = Mathf.Sqrt(Vector3.Dot(pLight.intensity, pLight.intensity));
-
-#if UNITY_EDITOR
-                    uLight.lightmapBakeType = LightmapBakeType.Baked;
-#endif
-                    if (pLight.type == emittype_t.emit_skylight)
-                        uLight.type = LightType.Directional;
-
-                    if (uLoader.UseDynamicLight)
-                    {
-                        uLight.shadows = LightShadows.Soft;
-                        uLight.shadowBias = 0.05f;
-                        if (uLight.type == LightType.Directional)
+                        if (dlight.linear_attn == 0.0f)
                         {
-                            uLight.intensity *= uLoader.LightEnvironmentScale;
-                            LightEnvironment = uLight.transform;
-                            uLight.shadowCustomResolution = uLoader.CustomCascadedShadowResolution;
-                            uLight.shadowNormalBias = 0;
-                        }
-                    }
-
-                    if (pLight.type == emittype_t.emit_spotlight || pLight.type == emittype_t.emit_point || pLight.type == emittype_t.emit_surface)
-                    {
-                        // To match earlier lighting, use quadratic...
-                        if ((pLight.constant_attn == 0.0) && (pLight.linear_attn == 0.0) && (pLight.quadratic_attn == 0.0))
-                        {
-                            BSP_WorldLights[wID].quadratic_attn = 1.0f;
+                            // Constant light with no distance falloff. Pick a radius.
+                            if (radius == 0) radius = uLoader.LightInfinityRadiusClamp;
                         }
 
-                        if (pLight.type == emittype_t.emit_spotlight)
-                        {
-                            uLight.type = LightType.Spot;
-
-                            if (pLight.exponent == 0.0)
-                                BSP_WorldLights[wID].exponent = 1.0f;
-
-                            Single SpotAngle = (2.0f * Mathf.Acos(pLight.stopdot2)) * Mathf.Rad2Deg;
-                            uLight.spotAngle = SpotAngle;
-
-                            if (SpotAngle >= 179)
-                                uLight.spotAngle -= 7f; // Constant to fix spot angles for Unity
-                        }
+                        // Linear falloff.
+                        else radius = (minValue - dlight.constant_attn) / dlight.linear_attn;
                     }
-
-                    // I replaced the cuttoff_dot field (which took a value from 0 to 1)
-                    // with a max light radius. Radius of less than 1 will never happen,
-                    // so I can get away with this. When I set radius to 0, it'll 
-                    // run the old code which computed a radius
-                    ComputeLightRadius(ref BSP_WorldLights[wID], WorldLightHDR);
-
-                    if (BSP_WorldLights[wID].quadratic_attn > 0)
-                        uLight.intensity /= uLoader.QuadraticIntensityFixer;
-
-                    uLight.color = new Color(Color.x, Color.y, Color.z, 1);
-
-                    if (pLight.type != emittype_t.emit_surface)
-                        uLight.range = (BSP_WorldLights[wID].radius) * uLoader.UnitScale;
                     else
                     {
-                        uLight.type = LightType.Area;
-                        uLight.intensity += BSP_WorldLights[wID].radius * uLoader.UnitScale;
-#if UNITY_EDITOR
-                        uLight.areaSize = new Vector2(uLoader.UnitScale, uLoader.UnitScale);
-#endif
+                        //Solve quadratic equation.
+                        float a = dlight.quadratic_attn;
+                        float b = dlight.linear_attn;
+                        float c = dlight.constant_attn - minValue;
+                        float discrim = b * b - 4 * a * c;
+                        if (discrim < 0.0f)
+                        {
+                            // Constant light with no distance falloff. Pick a radius.
+                            if (radius == 0) radius = uLoader.LightInfinityRadiusClamp;
+                        }
+                        else
+                        {
+                            radius = (-b + Mathf.Sqrt(discrim)) / (2.0f * a);
+                            if (radius < 0) radius = 0;
+                        }
                     }
 
-                    uLight.transform.position = pLight.origin * uLoader.UnitScale;
-                    uLight.transform.forward = pLight.normal;
+                    light.range = radius * uLoader.UnitScale;
+                    #endregion
+
+                    #region Compute a proper intensity from attenuation factors
+                    float dist = uLoader.LightAttenuationDistance;
+                    float dist2 = Mathf.Pow(dist, 2);
+
+                    float ratio = dlight.type == emittype_t.emit_surface ? radius : (dlight.constant_attn + dist * dlight.linear_attn + dist2 * dlight.quadratic_attn);
+                    if (ratio > 0) maxIntensity /= ratio;
+
+                    light.intensity = Mathf.Pow(maxIntensity, dlight.radius != 0 || WorldLightNewFormat ? 0.03f : 0.1f);
+                    #endregion
+
+                    if (dlight.type != emittype_t.emit_point)
+                    {
+                        light.type = LightType.Spot;
+                        if (dlight.type == emittype_t.emit_spotlight)
+                        {
+                            light.spotAngle = Mathf.Clamp((WorldLightNewFormat ? 1.65f : 2.0f) * Mathf.Acos(dlight.stopdot2) * Mathf.Rad2Deg, 1, 173);
+                            light.intensity *= uLoader.SpotIntensityScale;
+                        }
+                        else
+                        {
+                            light.spotAngle = 173;
+                            light.intensity *= uLoader.SurfLightIntensityScale;
+                        }
+                    }
+                    else light.intensity *= uLoader.PointIntensityScale;
                 }
+                #endregion
             }
+            #endregion
 
             BSP_Brushes = new List<GameObject>();
 
@@ -305,7 +326,6 @@ namespace uSource.Formats.Source.VBSP
 
         static void UnloadAll()
         {
-            ShadowControl = null;
             BSP_Faces = null;
             BSP_Models = null;
             BSP_Overlays = null;
@@ -320,7 +340,7 @@ namespace uSource.Formats.Source.VBSP
             BSP_CFaces = null;
             BSP_CDisp = null;
             BSP_WorldLights = null;
-            BSP_Brushes.Clear();
+            //BSP_Brushes.Clear();
             BSPFileReader.BaseStream.Dispose();
             BSPFileReader.BaseStream.Close();
             GC.Collect();
@@ -357,7 +377,7 @@ namespace uSource.Formats.Source.VBSP
                     CreateDispFaces();
                     CreateDisplacements();
 
-                    if(uLoader.ParseBSPPhysics)
+                    if (uLoader.ParseBSPPhysics)
                         GeneratePhysModels();
 
                     continue;
@@ -523,11 +543,10 @@ namespace uSource.Formats.Source.VBSP
                     VMTFile ValveMaterial = uResourceManager.LoadMaterial(BSP_TextureStringData[i]);
                     MeshRenderer.sharedMaterial = ValveMaterial.Material;
 #if UNITY_EDITOR
-                    if(uLoader.DebugMaterials)
+                    if (uLoader.DebugMaterials)
                         MeshObject.AddComponent<DebugMaterial>().Init(ValveMaterial);
 #endif
-
-                    MeshRenderer.lightmapIndex = uLoader.CurrentLightmap;
+                    if (uLoader.ParseLightmaps) MeshRenderer.lightmapIndex = uLoader.CurrentLightmap;
 
                     /*if (ValveMaterial.HasAnimation)
                     {
@@ -549,7 +568,7 @@ namespace uSource.Formats.Source.VBSP
                     }
                     else
                     {
-                        if(!uLoader.ParseBSPPhysics)
+                        if (!uLoader.ParseBSPPhysics)
                             MeshObject.AddComponent<MeshCollider>();
 
                         List<Vector2> UV2 = new List<Vector2>();
@@ -624,7 +643,7 @@ namespace uSource.Formats.Source.VBSP
                 MeshObject.AddComponent<DebugMaterial>().Init(ValveMaterial);
 #endif
 
-                MeshRenderer.lightmapIndex = uLoader.CurrentLightmap;
+                if (uLoader.ParseLightmaps) MeshRenderer.lightmapIndex = uLoader.CurrentLightmap;
 
                 /*if (ValveMaterial.HasAnimation)
                 {
@@ -1024,64 +1043,6 @@ namespace uSource.Formats.Source.VBSP
             return Mathf.Clamp((float)c * exponent * 0.5f, 0, 255) / 255.0f;
         }
 
-        static void ComputeLightRadius(ref dworldlight_t pLight, Boolean bIsHDR)
-        {
-            // HACKHACK: Usually our designers scale the light intensity by 0.5 in HDR
-            // This keeps the behavior of the cutoff radius consistent between LDR and HDR
-            float minLightValue = bIsHDR ? 0.015f : 0.03f;
-
-            // Compute the light range based on attenuation factors
-            float flIntensity = Mathf.Sqrt(Vector3.Dot(pLight.intensity, pLight.intensity));
-
-            if (pLight.quadratic_attn == 0.0f)
-            {
-                if (pLight.linear_attn == 0.0f)
-                {
-                    if (pLight.radius == 0)
-                        // Infinite, but we're not going to draw it as such
-                        pLight.radius = 2000;
-                }
-                else
-                {
-                    pLight.radius = (flIntensity / minLightValue - pLight.constant_attn) / pLight.linear_attn;
-                }
-            }
-            else
-            {
-                float a = pLight.quadratic_attn;
-                float b = pLight.linear_attn;
-                float c = pLight.constant_attn - flIntensity / minLightValue;
-                float discrim = b * b - 4 * a * c;
-                if (discrim < 0.0f)
-                {
-                    if (pLight.radius == 0)
-                        // Infinite, but we're not going to draw it as such
-                        pLight.radius = 2000;
-                }
-                else
-                {
-                    pLight.radius = (-b + Mathf.Sqrt(discrim)) / (2.0f * a);
-                    if (pLight.radius < 0)
-                        pLight.radius = 0;
-                }
-            }
-        }
-
-        static Vector3 NormalizeSourceColor(dworldlight_t pLight)
-        {
-            //Normalize color
-            Vector3 color = pLight.intensity;
-            color.Normalize();
-
-            //1.0 / 2.2 = 0.45454545454
-            color[0] = Mathf.Pow(color[0], 0.45454545454f);
-            color[1] = Mathf.Pow(color[1], 0.45454545454f);
-            color[2] = Mathf.Pow(color[2], 0.45454545454f);
-
-            return color;
-            //Normalize color
-        }
-
         static void CreateSkybox(List<String> data)
         {
             Material Material;
@@ -1097,7 +1058,7 @@ namespace uSource.Formats.Source.VBSP
             //Try load material from project (if exist)
             if (uLoader.SaveAssetsToUnity)
             {
-                FileName = uResourceManager.NormalizePath(Base, uResourceManager.MaterialsSubFolder, uResourceManager.MaterialsExtension[0]);
+                FileName = Base.NormalizePath(uResourceManager.MaterialsExtension[0], uResourceManager.MaterialsSubFolder);
                 RenderSettings.skybox = Material = uResourceManager.LoadAsset<Material>(FileName, uResourceManager.MaterialsExtension[0], ".mat");
                 if (Material != null)
                     return;
@@ -1221,7 +1182,7 @@ namespace uSource.Formats.Source.VBSP
                                 m_Origin = MathLibrary.SwapY(StaticPropLumpV11_t.m_Origin) * uLoader.UnitScale;
                                 m_Angles = new Vector3(StaticPropLumpV11_t.m_Angles.x, -StaticPropLumpV11_t.m_Angles.y, -StaticPropLumpV11_t.m_Angles.z);
 
-                                if(uLoader.ParseStaticPropScale)
+                                if (uLoader.ParseStaticPropScale)
                                     m_UniformScale = StaticPropLumpV11_t.m_UniformScale;
                                 break;
 

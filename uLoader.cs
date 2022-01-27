@@ -10,39 +10,26 @@ using uSource.Formats.Source.MDL;
 using UnityEditor;
 #endif
 
-//TODO:
-//Improve memory management and GC!
-//Improve ResourceManager
-//Improve BSP parsing (Lightmaps build in atlas, entites & etc...)
-//Add BSP collision (again, i hope can do that xd)
-//Add decal projections
-//Add VertexLighting support
-//Parse AmbientCubes to Light Probes
-//Add cubemap support
-//Improve VMT parsing
-//Port some shaders from Source to Unity
-//Improve MDL parsing (Decompress anim sectors, virtualmodels (ani), attachments, flexes with rules)
-//Improve VVD / VTX parsing (for lods and 8 bytes length on some models in strips!)
-//Add PHY Support
-//Add DMX support
-//Add PCF support
-//Add SFM session support
 namespace uSource
 {
 #if UNITY_EDITOR
     //TODO: Fix Window
     public class uLoaderWindow : EditorWindow
     {
-        [MenuItem("uSource/Loader")]
+        Vector2 scrollPos;
+
+        [MenuItem("uSource/Importer")]
         static void Init()
         {
-            uLoaderWindow window = (uLoaderWindow)EditorWindow.GetWindow(typeof(uLoaderWindow));
+            uLoaderWindow window = (uLoaderWindow)GetWindow(typeof(uLoaderWindow));
             window.Show();
         }
 
         void OnGUI()
         {
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
             uLoaderEditor.DrawGUI();
+            EditorGUILayout.EndScrollView();
         }
     }
 
@@ -56,12 +43,39 @@ namespace uSource
             DrawGUI();
         }
 
+        static GUIStyle WindowContent;
+        static GUIStyle BoxContent;
+        static GUIStyle BoxContentLabel;
+
         public static void DrawGUI()
         {
             #region Global Settings
 
             if (!uLoader.PresetLoaded)
+            {
+                WindowContent = new GUIStyle(GUI.skin.window);
+                WindowContent.padding = new RectOffset(0, 0, WindowContent.padding.top, 0);
+                WindowContent.margin = new RectOffset(0, 0, 0, 0);
+                WindowContent.font = EditorStyles.boldLabel.font;
+                WindowContent.fontStyle = FontStyle.Bold;
+
+                BoxContent = new GUIStyle(GUI.skin.box);
+                BoxContent.padding = new RectOffset(0, 0, 0, 0);
+                BoxContent.margin = new RectOffset(0, 0, BoxContent.margin.top, 0);
+                BoxContent.contentOffset = new Vector2(0, 0);
+
+                BoxContentLabel = new GUIStyle(BoxContent);
+                BoxContentLabel.padding = WindowContent.padding;
+                BoxContentLabel.margin = GUI.skin.box.margin;
+                BoxContentLabel.contentOffset = WindowContent.contentOffset;
+                BoxContentLabel.alignment = WindowContent.alignment;
+                BoxContentLabel.normal.textColor = WindowContent.normal.textColor;
+                BoxContentLabel.wordWrap = WindowContent.wordWrap;
+                BoxContentLabel.font = EditorStyles.boldLabel.font;
+                BoxContentLabel.fontStyle = FontStyle.Bold;
+
                 uLoader.LoadPreset();
+            }
 
             GUILayout.BeginVertical("box");
             {
@@ -278,31 +292,21 @@ namespace uSource
                     GUILayout.BeginVertical("box");
                     if (uLoader.LightingSettingsFoldout = EditorGUILayout.Foldout(uLoader.LightingSettingsFoldout, "Lighting Settings", true, EditorStyles.miniButtonLeft))
                     {
-                        uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights (Beta)", uLoader.ParseLights);
+                        uLoader.ParseLights = EditorGUILayout.ToggleLeft("Parse lights", uLoader.ParseLights);
                         if (uLoader.ParseLights)
                         {
-                            GUILayout.BeginVertical("helpbox");
-                            GUILayout.Label("BSP already store lights in \"dworldlight\" structure\n!!!Recommend to use it!!!", EditorStyles.boldLabel);
-
-                            uLoader.UseWorldLights = EditorGUILayout.ToggleLeft("Use world lights", uLoader.UseWorldLights);
-
+                            GUILayout.BeginVertical("Additional intensity scales (optional)", BoxContentLabel);
+                            uLoader.AmbientIntensityScale = EditorGUILayout.FloatField(new GUIContent("Ambient", "Additional intensity scale for ambient color"), uLoader.AmbientIntensityScale);
+                            uLoader.LightEnvironmentScale = EditorGUILayout.FloatField(new GUIContent("Directional", "Additional intensity scale for directional light"), uLoader.LightEnvironmentScale);
+                            uLoader.PointIntensityScale = EditorGUILayout.FloatField(new GUIContent("Point", "Additional intensity scale for point light"), uLoader.PointIntensityScale);
+                            uLoader.SpotIntensityScale = EditorGUILayout.FloatField(new GUIContent("Spot", "Additional intensity scale for spot light"), uLoader.SpotIntensityScale);
+                            uLoader.SurfLightIntensityScale = EditorGUILayout.FloatField(new GUIContent("Surface", "Additional intensity scale for surface light"), uLoader.SurfLightIntensityScale);
                             GUILayout.EndVertical();
 
-                            if (uLoader.UseWorldLights)
-                            {
-                                GUILayout.BeginVertical("helpbox");
-                                uLoader.QuadraticIntensityFixer = EditorGUILayout.FloatField("Quadratic intensity fix const", uLoader.QuadraticIntensityFixer);
-                                GUILayout.Label("For rebake lightmaps it used lower value (def: 1~)\n\nFor fix up brightness with dynamic lights, value can be set higher (def: 4~)", EditorStyles.miniBoldLabel);
-                                GUILayout.EndVertical();
-
-                                GUILayout.BeginVertical("helpbox");
-                                uLoader.LightEnvironmentScale = EditorGUILayout.FloatField("Scale intensity light environment", uLoader.LightEnvironmentScale);
-                                GUILayout.Label("Directional light looks more darkness in Unity\nThis parameter fixup that (multiply intensity)", EditorStyles.miniBoldLabel);
-                                GUILayout.EndVertical();
-                            }
-
                             uLoader.CustomCascadedShadowResolution = EditorGUILayout.IntSlider("Directional Shadow Map Size:", uLoader.CustomCascadedShadowResolution, 64, 8192);
-                            uLoader.IgnoreShadowControl = EditorGUILayout.ToggleLeft("Ignore shadow control", uLoader.IgnoreShadowControl);
+                            uLoader.LightAttenuationDistance = EditorGUILayout.FloatField(new GUIContent("Attenuation distance", "Distance from vertex position to light position (lower distance - brighter, higher distance - less bright)"), uLoader.LightAttenuationDistance);
+                            uLoader.LightInfinityRadiusClamp = EditorGUILayout.FloatField(new GUIContent("Infinity radius", "Clamped radius light if equal infinity"), uLoader.LightInfinityRadiusClamp);
+                            uLoader.LightMinValue = EditorGUILayout.FloatField(new GUIContent("Min Value", "This keeps the behavior of the cutoff radius consistent."), uLoader.LightMinValue);
                             uLoader.UseDynamicLight = EditorGUILayout.ToggleLeft("Dynamic shadows", uLoader.UseDynamicLight);
                         }
                     }
@@ -536,7 +540,8 @@ namespace uSource
         public static Single ThresholdMaxSwitch = 0.1f;
         public static Single SubstractLODPrecent = 0.25f;
         #endregion
-        public static Single UnitScale = 0.0254f;
+        public const float inchesInMeters = 1f / 32;
+        public static Single UnitScale = inchesInMeters;
         public static Boolean LoadAnims = false;
         public static Boolean ClearDirectoryCache = false;
         public static Boolean ClearModelCache = true;
@@ -555,11 +560,15 @@ namespace uSource
         public static Boolean UseGammaLighting = true;
         public static Boolean UseLightmapsAsTextureShader = false;
         public static Boolean ParseLights = true;
-        public static Boolean UseWorldLights = true;
-        public static Single QuadraticIntensityFixer = 1;
-        public static Single LightEnvironmentScale = 4;
+        public static Single LightMinValue = 0.03f;
+        public static Single LightInfinityRadiusClamp = 2000f;
+        public static Single LightAttenuationDistance = 10;
+        public static Single AmbientIntensityScale = 1f;
+        public static Single LightEnvironmentScale = 1.25f;
+        public static Single PointIntensityScale = 1;
+        public static Single SpotIntensityScale = 1;
+        public static Single SurfLightIntensityScale = 1;
         public static Int32 CustomCascadedShadowResolution = 8192;
-        public static Boolean IgnoreShadowControl = false;
         public static Boolean UseDynamicLight = true;
         public static Boolean DebugEntities = true;
         public static Boolean DebugMaterials = true;
@@ -613,14 +622,14 @@ namespace uSource
         #endregion
 
         #region Save / Load Feature
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
 
         #region Prefs
         public static String[] GetStringArray(String Key, String[] DefaultValue)
         {
             if (!PlayerPrefs.HasKey(Key))
                 return DefaultValue;
-            
+
             return PlayerPrefs.GetString(Key).Split('|');
         }
 
@@ -771,11 +780,15 @@ namespace uSource
             UseGammaLighting = GetBool("uUseGammaLighting", UseGammaLighting);
             UseLightmapsAsTextureShader = GetBool("uUseLightmapsAsTextureShader", UseLightmapsAsTextureShader);
             ParseLights = GetBool("uParseLights", ParseLights);
-            UseWorldLights = GetBool("uUseWorldLights", UseWorldLights);
-            QuadraticIntensityFixer = PlayerPrefs.GetFloat("uQuadraticIntensityFixer", QuadraticIntensityFixer);
+            AmbientIntensityScale = PlayerPrefs.GetFloat("uAmbientIntensityScale", AmbientIntensityScale);
             LightEnvironmentScale = PlayerPrefs.GetFloat("uLightEnvironmentScale", LightEnvironmentScale);
+            PointIntensityScale = PlayerPrefs.GetFloat("uPointIntensityScale", PointIntensityScale);
+            SpotIntensityScale = PlayerPrefs.GetFloat("uSpotIntensityScale", SpotIntensityScale);
+            SurfLightIntensityScale = PlayerPrefs.GetFloat("uSurfIntensityScale", SurfLightIntensityScale);
             CustomCascadedShadowResolution = PlayerPrefs.GetInt("uCustomCascadedShadowResolution", CustomCascadedShadowResolution);
-            IgnoreShadowControl = GetBool("uIgnoreShadowControl", IgnoreShadowControl);
+            LightAttenuationDistance = PlayerPrefs.GetFloat("uLightAttenuationDistance", LightAttenuationDistance);
+            LightInfinityRadiusClamp = PlayerPrefs.GetFloat("uInfinityRadiusClamp", LightInfinityRadiusClamp);
+            LightMinValue = PlayerPrefs.GetFloat("uLDRMinLightValue", LightMinValue);
             UseDynamicLight = GetBool("uUseDynamicLight", UseDynamicLight);
             DebugEntities = GetBool("uDebugEntities", DebugEntities);
             DebugMaterials = GetBool("uDebugMaterials", DebugMaterials);
@@ -874,11 +887,15 @@ namespace uSource
             SetBool("uUseGammaLighting", UseGammaLighting);
             SetBool("uUseLightmapsAsTextureShader", UseLightmapsAsTextureShader);
             SetBool("uParseLights", ParseLights);
-            SetBool("uUseWorldLights", UseWorldLights);
-            PlayerPrefs.SetFloat("uQuadraticIntensityFixer", QuadraticIntensityFixer);
+            PlayerPrefs.SetFloat("uAmbientIntensityScale", AmbientIntensityScale);
             PlayerPrefs.SetFloat("uLightEnvironmentScale", LightEnvironmentScale);
+            PlayerPrefs.SetFloat("uPointIntensityScale", PointIntensityScale);
+            PlayerPrefs.SetFloat("uSpotIntensityScale", SpotIntensityScale);
+            PlayerPrefs.SetFloat("uSurfIntensityScale", SurfLightIntensityScale);
             PlayerPrefs.SetInt("uCustomCascadedShadowResolution", CustomCascadedShadowResolution);
-            SetBool("uIgnoreShadowControl", IgnoreShadowControl);
+            PlayerPrefs.SetFloat("uLightAttenuationDistance", LightAttenuationDistance);
+            PlayerPrefs.SetFloat("uInfinityRadiusClamp", LightInfinityRadiusClamp);
+            PlayerPrefs.SetFloat("uLDRMinLightValue", LightMinValue);
             SetBool("uUseDynamicLight", UseDynamicLight);
             SetBool("uDebugEntities", DebugEntities);
             SetBool("uDebugMaterials", DebugMaterials);
@@ -960,7 +977,7 @@ namespace uSource
             ThresholdMaxSwitch = 0.1f;
             SubstractLODPrecent = 0.25f;
             #endregion
-            UnitScale = 0.0254f;
+            UnitScale = inchesInMeters;
             LoadAnims = false;
             ClearDirectoryCache = false;
             ClearModelCache = true;
@@ -977,11 +994,15 @@ namespace uSource
             UseGammaLighting = true;
             UseLightmapsAsTextureShader = false;
             ParseLights = true;
-            UseWorldLights = true;
-            QuadraticIntensityFixer = 1;
-            LightEnvironmentScale = 4;
+            AmbientIntensityScale = 1f;
+            LightEnvironmentScale = 1.25f;
+            PointIntensityScale = 1;
+            SpotIntensityScale = 1;
+            SurfLightIntensityScale = 1;
             CustomCascadedShadowResolution = 8192;
-            IgnoreShadowControl = false;
+            LightAttenuationDistance = 10;
+            LightInfinityRadiusClamp = 2000f;
+            LightMinValue = 0.03f;
             UseDynamicLight = true;
             DebugEntities = true;
             DebugMaterials = true;
@@ -1018,7 +1039,7 @@ namespace uSource
             UnlitGeneric = "USource/UnlitGeneric";
             #endregion
 
-            if(SaveAfterResetPreset)
+            if (SaveAfterResetPreset)
                 SavePreset();
 
             Debug.Log("Preset Reseted");
@@ -1035,7 +1056,7 @@ namespace uSource
                 uResourceManager.ProjectPath = null;
 #endif
 
-            if(uResourceManager.Providers != null)
+            if (uResourceManager.Providers != null)
             {
                 uResourceManager.CloseStreams();
                 uResourceManager.RemoveResourceProviders();

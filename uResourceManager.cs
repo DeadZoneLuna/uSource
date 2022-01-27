@@ -166,10 +166,10 @@ namespace uSource
     public class uResourceManager
     {
         #region Sub Folders & Extensions
-        public static readonly String MapsSubFolder = "maps/";
+        public static readonly String MapsSubFolder = "maps";
         public static readonly String MapsExtension = ".bsp";
 
-        public static readonly String ModelsSubFolder = "models/";
+        public static readonly String ModelsSubFolder = "models";
         public static readonly String[] ModelsExtension =
         {
             ".mdl",
@@ -181,7 +181,7 @@ namespace uSource
             ".ani",
             ".phy"
         };
-        public static readonly String MaterialsSubFolder = "materials/";
+        public static readonly String MaterialsSubFolder = "materials";
         public static readonly String[] MaterialsExtension =
         {
             ".vmt",
@@ -206,31 +206,6 @@ namespace uSource
         public static List<String[,]> TexExportCache;
         public static List<Mesh> UV2GenerateCache;
 #endif
-        #endregion
-
-        #region Misc Stuff
-        //TODO: fix dot slashes
-        public static Regex slashesRegex = new Regex(@"[\\/./]+", RegexOptions.Compiled);
-        public static Regex subfolderRegex = new Regex(@"\b(models/|materials/|sounds/)\b", RegexOptions.Compiled);
-        public static String NormalizePath(String FileName, String SubFolder, String FileExtension, Boolean outputExtension = true)
-        {
-            Int32 SubIndex = FileName.IndexOf(SubFolder, StringComparison.Ordinal);
-            if (SubIndex >= 0)
-            {
-                if(subfolderRegex.IsMatch(FileName))
-                    FileName = FileName.Remove(SubIndex, SubFolder.Length);
-            }
-
-            Int32 ExtensionIndex = FileName.LastIndexOf(FileExtension, StringComparison.Ordinal);
-            if (ExtensionIndex >= 0)
-                FileName = FileName.Remove(ExtensionIndex, FileExtension.Length);
-
-            FileName = slashesRegex.Replace(SubFolder + FileName, "/").ToLower();
-            if (outputExtension)
-                return FileName + FileExtension;
-            else
-                return FileName;
-        }
         #endregion
 
         #region Provider Manager
@@ -263,11 +238,11 @@ namespace uSource
 
                 if (ProjectPath == null)
                 {
-                    ProjectPath = slashesRegex.Replace(Directory.GetCurrentDirectory(), "/");
+                    ProjectPath = Directory.GetCurrentDirectory().NormalizeSlashes();
 
-                    uSourceSavePath = slashesRegex.Replace("Assets/" + uLoader.OutputAssetsFolder + "/" + uLoader.ModFolders[0] + "/", "/");
+                    uSourceSavePath = string.Format("Assets/{0}/{1}/", uLoader.OutputAssetsFolder, uLoader.ModFolders[0]).NormalizeSlashes();
                     TexExportType = uLoader.ExportTextureAsPNG ? ".png" : ".asset";
-                    ProjectPath += "/" + uSourceSavePath;
+                    ProjectPath += PathExtension.SeparatorChar + uSourceSavePath;
                 }
             }
 #endif
@@ -285,7 +260,7 @@ namespace uSource
         public static void Init(String RootPath, String ModFolder, String[] DirPaks)
         {
             //Initializing mod folder to provider cache (to use find resources from mod folder before)
-            String FullPath = slashesRegex.Replace(RootPath + "/" + ModFolder + "/", "/");
+            String FullPath = string.Format("{0}/{1}/", RootPath, ModFolder).NormalizeSlashes();
 
             if (Directory.Exists(FullPath))
                 Providers.Add(new DirProvider(FullPath));
@@ -322,7 +297,7 @@ namespace uSource
 
         public static Boolean ContainsFile(String FileName, String SubFolder, String FileExtension)
         {
-            String FilePath = NormalizePath(FileName, SubFolder, FileExtension);
+            String FilePath = FileName.NormalizePath(FileExtension, SubFolder);
             for (Int32 i = 0; i < Providers.Count; i++)
             {
                 if (Providers[i].ContainsFile(FilePath))
@@ -359,8 +334,8 @@ namespace uSource
         {
             Init(uLoader.RootPath, uLoader.ModFolders[0], uLoader.DirPaks[0]);
 
-            String FileName = MapsSubFolder + MapName.ToLower() + MapsExtension;
-            String FilePath = slashesRegex.Replace(uLoader.RootPath + "/", "/") + uLoader.ModFolders[0] + "/" + FileName;
+            String FileName = string.Format("{0}/{1}", MapsSubFolder, MapName).NormalizeSlashes() + MapsExtension;
+            String FilePath = string.Format("{0}/{1}/{2}", uLoader.RootPath, uLoader.ModFolders[0], FileName).NormalizeSlashes();
             Stream TempFile = null;
 
             try
@@ -415,7 +390,7 @@ namespace uSource
         {
             //Normalize path before do magic here 
             //(Cuz some paths uses different separators or levels... so we normalize paths always)
-            String TempPath = NormalizePath(ModelPath, ModelsSubFolder, ModelsExtension[0], false);
+            String TempPath = ModelPath.NormalizePath(ModelsExtension[0], ModelsSubFolder, outputWithExt: false);
 
             //If model exist in cache, return it
             if (ModelCache.ContainsKey(TempPath))
@@ -513,7 +488,7 @@ namespace uSource
         {
             //Normalize path before do magic here 
             //(Cuz some paths uses different separators or levels... so we normalize paths always)
-            String TempPath = NormalizePath(MaterialPath, MaterialsSubFolder, MaterialsExtension[0], false);
+            String TempPath = MaterialPath.NormalizePath(MaterialsExtension[0], MaterialsSubFolder, outputWithExt: false);
 
             //If material exist in cache, return it
             if (MaterialCache.ContainsKey(TempPath))
@@ -567,9 +542,9 @@ namespace uSource
 
             //Normalize paths before do magic here 
             //(Cuz some paths uses different separators or levels... so we normalize paths always)
-            TempPath = NormalizePath(TexturePath, MaterialsSubFolder, MaterialsExtension[1], false);
+            TempPath = TexturePath.NormalizePath(MaterialsExtension[1], MaterialsSubFolder, outputWithExt: false);
             if (AltTexture != null)
-                AltTexture = NormalizePath(AltTexture, MaterialsSubFolder, MaterialsExtension[1]);
+                AltTexture = TexturePath.NormalizePath(MaterialsExtension[1], MaterialsSubFolder, outputWithExt: false);
 
 #if UNITY_EDITOR
             //Add texture to export process from material (if ImmediatelyConvert is false & save assets option enabled)
