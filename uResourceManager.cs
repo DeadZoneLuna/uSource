@@ -18,14 +18,14 @@ namespace uSource
     public interface IResourceProvider
     {
         Boolean ContainsFile(String FilePath);
-        Stream OpenFile(String FilePath);
+        Stream OpenFile(String FilePath, bool cacheStream = true);
 
         void CloseStreams();
     }
 
     public class DirProvider : IResourceProvider
     {
-        FileStream currentFile;
+        FileStream CurrentFile;
         private String root;
         public DirProvider(String directory)
         {
@@ -42,7 +42,7 @@ namespace uSource
                 return true;
             else
             {
-                String path = root + "/" + FilePath;
+                String path = root + PathExtension.SeparatorChar + FilePath;
                 if (File.Exists(path))
                 {
                     uResourceManager.DirectoryCache.Add(FilePath, path);
@@ -53,12 +53,13 @@ namespace uSource
             }
         }
 
-        public Stream OpenFile(String FilePath)
+        public Stream OpenFile(String FilePath, bool cacheStream = true)
         {
             if (ContainsFile(FilePath))
             {
                 CloseStreams();
-                return currentFile = File.OpenRead(uResourceManager.DirectoryCache[FilePath]);
+                FileStream file = File.OpenRead(uResourceManager.DirectoryCache[FilePath]);
+                return cacheStream ? CurrentFile = file : file;
             }
 
             return null;
@@ -66,10 +67,10 @@ namespace uSource
 
         public void CloseStreams()
         {
-            if (currentFile != null)
+            if (CurrentFile != null)
             {
-                currentFile.Dispose();
-                currentFile.Close();
+                CurrentFile.Dispose();
+                CurrentFile.Close();
                 return;
             }
         }
@@ -104,7 +105,7 @@ namespace uSource
             return files.ContainsKey(FilePath);
         }
 
-        public Stream OpenFile(String FilePath)
+        public Stream OpenFile(String FilePath, bool cacheStream = true)
         {
             if (ContainsFile(FilePath))
                 return IPAK.GetInputStream(files[FilePath]);
@@ -124,7 +125,7 @@ namespace uSource
     public class VPKProvider : IResourceProvider
     {
         VPKFile VPK;
-        MemoryStream currentStream;
+        Stream currentStream;
 
         public VPKProvider(String file)
         {
@@ -139,11 +140,12 @@ namespace uSource
             return VPK.Entries.ContainsKey(FilePath);
         }
 
-        public Stream OpenFile(String FilePath)
+        public Stream OpenFile(String FilePath, bool cacheStream = true)
         {
             if (ContainsFile(FilePath))
             {
-                return VPK.Entries[FilePath].ReadAnyDataStream();
+                Stream stream = VPK.Entries[FilePath].ReadAnyDataStream();
+                return cacheStream ? currentStream = stream : stream;
             }
 
             return null;
@@ -307,13 +309,13 @@ namespace uSource
             return false;
         }
 
-        public static Stream OpenFile(String FilePath)
+        public static Stream OpenFile(String FilePath, bool cacheStream = true)
         {
             for (Int32 i = 0; i < Providers.Count; i++)
             {
                 if (Providers[i].ContainsFile(FilePath))
                 {
-                    return Providers[i].OpenFile(FilePath);
+                    return Providers[i].OpenFile(FilePath, cacheStream);
                 }
             }
 
@@ -334,19 +336,12 @@ namespace uSource
         {
             Init(uLoader.RootPath, uLoader.ModFolders[0], uLoader.DirPaks[0]);
 
-            String FileName = string.Format("{0}/{1}", MapsSubFolder, MapName).NormalizeSlashes() + MapsExtension;
-            String FilePath = string.Format("{0}/{1}/{2}", uLoader.RootPath, uLoader.ModFolders[0], FileName).NormalizeSlashes();
+            String FileName = string.Format("{1}{0}{2}", PathExtension.SeparatorChar, MapsSubFolder, MapName).NormalizeSlashes() + MapsExtension;
             Stream TempFile = null;
 
             try
             {
-                //Make sure if map exist in folder
-                if (File.Exists(FilePath))
-                    TempFile = File.OpenRead(FilePath);
-                else //Else try load from VPK? :D (somegames stored maps in VPK, why..? D:)
-                    TempFile = OpenFile(FileName);
-
-                using (Stream BSPStream = TempFile)
+                using (Stream BSPStream = TempFile = OpenFile(FileName, false))
                 {
                     if (BSPStream == null)
                     {
