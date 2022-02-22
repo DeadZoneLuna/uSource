@@ -206,8 +206,11 @@ namespace uSource.Formats.Source.VTF
                 BaseTexture = uResourceManager.LoadTexture(TextureName, ExportData: new String[,] { { FileName, "_MainTex" } })[0, 0];
 
                 //To avoid "NullReferenceException"
+                //Temp fix before big update
+#if UNITY_EDITOR
                 if (BaseTexture != null)
                     HasAlpha = BaseTexture.alphaIsTransparency;
+#endif
             }
 
             Material = new Material(GetShader(Include == null ? ShaderType : Include.ShaderType, HasAlpha));

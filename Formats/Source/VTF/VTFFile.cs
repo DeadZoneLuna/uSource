@@ -252,7 +252,10 @@ namespace uSource.Formats.Source.VTF
                     {
                         Frames[FrameID, FaceID] = new Texture2D(Width, Height, InternalFormat, mipmaps);
                         Frames[FrameID, FaceID].name = FileName;
+                        //Temp fix before big update
+#if UNITY_EDITOR
                         Frames[FrameID, FaceID].alphaIsTransparency = hasAlpha;
+#endif
                         Frames[FrameID, FaceID].LoadRawTextureData(FramesData[FrameID].ToArray());
                         Frames[FrameID, FaceID].Apply();
 

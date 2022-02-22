@@ -82,6 +82,7 @@ namespace uSource
 
     public static class SceneViewExtension
     {
+#if UNITY_EDITOR
         public static bool GetLightingStatus(this SceneView scene)
         {
 #if UNITY_2019_1_OR_NEWER
@@ -99,6 +100,7 @@ namespace uSource
             return scene.m_SceneLighting = value;
 #endif
         }
+#endif
     }
 
 #if NET_2_0 || NET_2_0_SUBSET
